@@ -1,118 +1,65 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
-
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+import React, { useEffect, useState } from 'react';
+import { StatusBar } from 'react-native';
+import ErrorBoundary from './src/components/ErrorBoundary';
+import AppNavigator from './src/navigation/AppNavigator';
+import SplashScreen from './src/components/SplashScreen';
+import { initLogger, shutdownLogger, log } from './src/utils/logger';
+import { checkNetworkStatus, monitorNetwork } from './src/utils/network';
+import { initWorkspace } from './src/utils/workspace';
+import { initLang } from './src/i18n';
 
 function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+  const [showSplash, setShowSplash] = useState(true);
+  const [rooted, setRooted] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const handleSplashFinish = (isRooted: boolean) => {
+    setRooted(isRooted);
+    setShowSplash(false);
+
+    (async () => {
+      try {
+        const lang = await initLang();
+        const ws = await initWorkspace();
+        await initLogger(ws.initialized ? ws.path : undefined);
+
+        log.start('App', '========== 应用启动 ==========');
+        log.info('App', `版本: 3.7.1 | 平台: Android | RN: 0.73.6 | 语言: ${lang}`);
+
+        const netStatus = await checkNetworkStatus();
+        log.net('App', `初始网络状态: ${netStatus}`);
+        log.info('App', `工作区初始化: ${ws.initialized ? '成功' : '失败'} | 路径: ${ws.path} | 文件数: ${ws.fileCount}`);
+        log.start('App', '========== 启动完成 ==========');
+
+        setReady(true);
+      } catch (e) {
+        console.error('App init error:', e);
+        setReady(true);
+      }
+    })();
   };
 
+  useEffect(() => {
+    const unsub = monitorNetwork((s) => {
+      log.net('App', `网络状态变更: ${s}`);
+    });
+
+    return () => {
+      unsub();
+      shutdownLogger();
+    };
+  }, []);
+
+  if (showSplash) {
+    return <SplashScreen onFinish={handleSplashFinish} />;
+  }
+
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    <ErrorBoundary>
+      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
+      {ready ? <AppNavigator rooted={rooted} /> : null}
+    </ErrorBoundary>
   );
 }
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
 
 export default App;

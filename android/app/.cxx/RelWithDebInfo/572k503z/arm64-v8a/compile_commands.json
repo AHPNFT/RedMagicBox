@@ -1,0 +1,7 @@
+[
+{
+  "directory": "F:/HongmoSecureBox/android/app/.cxx/RelWithDebInfo/572k503z/arm64-v8a",
+  "command": "F:\\Android\\Sdk\\ndk\\25.1.8937393\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android24 --sysroot=F:/Android/Sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dcryptocore_EXPORTS -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -O2 -fvisibility=hidden -O2 -g -DNDEBUG -fPIC -O2 -fvisibility=hidden -ffunction-sections -fdata-sections -o CMakeFiles\\cryptocore.dir\\crypto-core.cpp.o -c F:\\HongmoSecureBox\\android\\app\\src\\main\\cpp\\crypto-core.cpp",
+  "file": "F:\\HongmoSecureBox\\android\\app\\src\\main\\cpp\\crypto-core.cpp"
+}
+]

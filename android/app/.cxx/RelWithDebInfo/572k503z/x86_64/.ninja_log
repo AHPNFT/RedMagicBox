@@ -1,0 +1,6 @@
+# ninja log v5
+1	940	7999836915954840	CMakeFiles/cryptocore.dir/crypto-core.cpp.o	e3de6e18c3c91264
+941	1101	7999836917831540	F:/HongmoSecureBox/android/app/build/intermediates/cxx/RelWithDebInfo/572k503z/obj/x86_64/libcryptocore.so	3838afe2ac0e92b
+0	6	0	clean	b2adc435cbe8e4d7
+45	1652	7999925498390412	CMakeFiles/cryptocore.dir/crypto-core.cpp.o	e3de6e18c3c91264
+1653	2346	7999925505620447	F:/HongmoSecureBox/android/app/build/intermediates/cxx/RelWithDebInfo/572k503z/obj/x86_64/libcryptocore.so	3838afe2ac0e92b
