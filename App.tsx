@@ -24,7 +24,7 @@ function App(): React.JSX.Element {
         await initLogger(ws.initialized ? ws.path : undefined);
 
         log.start('App', '========== 应用启动 ==========');
-        log.info('App', `版本: 3.7.1 | 平台: Android | RN: 0.73.6 | 语言: ${lang}`);
+        log.info('App', `版本: 3.7.2 | 平台: Android | RN: 0.73.6 | 语言: ${lang}`);
 
         const netStatus = await checkNetworkStatus();
         log.net('App', `初始网络状态: ${netStatus}`);

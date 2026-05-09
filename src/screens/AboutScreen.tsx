@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,119 +6,21 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
   Image,
   Clipboard,
 } from 'react-native';
 import Colors from '../theme/colors';
-import { log } from '../utils/logger';
-import { hapticSuccess, hapticError, hapticLight } from '../utils/haptic';
+import { hapticLight } from '../utils/haptic';
 import { t } from '../i18n';
 
-const APP_VERSION = '3.7.1';
+const APP_VERSION = '3.7.2';
 const RMAB_CONTRACT = '0x92cB10E1D503b5c41f54fCC6B576176E6f29FBAD';
 
-interface ShareModule {
-  open: (opts: any) => Promise<any>;
-}
-
-let RNShare: ShareModule | null = null;
-try {
-  const m = require('react-native-share');
-  RNShare = m.default || m;
-} catch {}
-
-interface RNFSModule {
-  DocumentDirectoryPath: string;
-  exists: (p: string) => Promise<boolean>;
-  readDir: (p: string) => Promise<Array<{ name: string; path: string; isFile: () => boolean }>>;
-  readFile: (p: string, e?: string) => Promise<string>;
-  writeFile: (p: string, c: string, e?: string) => Promise<void>;
-  CachesDirectoryPath: string;
-  unlink: (p: string) => Promise<void>;
-}
-
-let RNFS: RNFSModule | null = null;
-try {
-  RNFS = require('react-native-fs') as RNFSModule;
-} catch {}
-
 const AboutScreen: React.FC = () => {
-  const [exporting, setExporting] = useState(false);
-
-  const handleExportLog = useCallback(async () => {
-    hapticLight();
-    log.touch('About', '点击导出日志');
-
-    if (!RNFS || !RNShare) {
-      Alert.alert(t('common_error'), t('about_log_unavailable'));
-      return;
-    }
-
-    setExporting(true);
-    try {
-      const logDir = `${RNFS.DocumentDirectoryPath}/hongmo_logs`;
-      if (!(await RNFS.exists(logDir))) {
-        Alert.alert(t('common_tip'), t('about_no_logs'));
-        setExporting(false);
-        return;
-      }
-
-      const entries = await RNFS.readDir(logDir);
-      const logFiles = entries.filter((e) => e.isFile() && e.name.endsWith('.log'));
-
-      if (logFiles.length === 0) {
-        Alert.alert(t('common_tip'), t('about_no_logs'));
-        setExporting(false);
-        return;
-      }
-
-      let allContent = t('about_log_header')
-        .replace('{version}', APP_VERSION)
-        .replace('{time}', new Date().toLocaleString())
-        .replace('{separator}', '='.repeat(50));
-
-      for (const f of logFiles) {
-        try {
-          const content = await RNFS.readFile(f.path, 'utf8');
-          allContent += `\n--- ${f.name} ---\n${content}\n`;
-        } catch {}
-      }
-
-      const exportPath = `${RNFS.CachesDirectoryPath}/hongmo_log_export_${Date.now()}.txt`;
-      await RNFS.writeFile(exportPath, allContent, 'utf8');
-
-      await RNShare.open({
-        title: t('about_log_export_title'),
-        message: t('about_log_export_msg'),
-        url: `file://${exportPath}`,
-        filename: `hongmo_log_${Date.now()}.txt`,
-        type: 'text/plain',
-        failOnCancel: false,
-      });
-
-      hapticSuccess();
-      log.info('About', '日志导出分享成功');
-
-      try { await RNFS.unlink(exportPath); } catch {}
-    } catch (e: any) {
-      if (e.message?.includes('cancel') || e.message?.includes('CANCELLED')) {
-        setExporting(false);
-        return;
-      }
-      hapticError();
-      log.error('About', `日志导出失败: ${e.message || '未知错误'}`);
-      Alert.alert(t('about_log_export_fail'), e.message || t('decrypt_err_unknown'));
-    } finally {
-      setExporting(false);
-    }
-  }, []);
-
   const handleCopyContract = useCallback(() => {
     hapticLight();
     Clipboard.setString(RMAB_CONTRACT);
     Alert.alert(t('common_copied'), t('about_contract_copied'));
-    log.info('About', '复制合约地址');
   }, []);
 
   return (
@@ -185,17 +87,6 @@ const AboutScreen: React.FC = () => {
             {t('about_disclaimer_text')}
           </Text>
         </View>
-
-        <TouchableOpacity
-          style={styles.logBtn}
-          onPress={handleExportLog}
-          disabled={exporting}>
-          {exporting ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.logBtnText}>{t('about_export_log')}</Text>
-          )}
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -310,18 +201,6 @@ const styles = StyleSheet.create({
     fontSize: Colors.font.sm,
     color: Colors.primary,
     fontWeight: '600',
-  },
-  logBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: Colors.radius.md,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  logBtnText: {
-    color: Colors.buttonText,
-    fontSize: Colors.font.lg,
-    fontWeight: '700',
   },
 });
 
