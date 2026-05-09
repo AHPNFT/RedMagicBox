@@ -1,0 +1,3 @@
+F:/HongmoSecureBox/android/app/.cxx/RelWithDebInfo/572k503z/x86_64/CMakeFiles/cryptocore.dir
+F:/HongmoSecureBox/android/app/.cxx/RelWithDebInfo/572k503z/x86_64/CMakeFiles/edit_cache.dir
+F:/HongmoSecureBox/android/app/.cxx/RelWithDebInfo/572k503z/x86_64/CMakeFiles/rebuild_cache.dir

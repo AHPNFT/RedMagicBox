@@ -1,0 +1,395 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  Alert,
+  ScrollView,
+} from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import Colors from '../theme/colors';
+import { activateWithCode, getActivationState, getRemainingEncrypts } from '../utils/activationState';
+import { FREE_ENCRYPT_LIMIT } from '../utils/activation';
+import { hapticSuccess, hapticError, hapticLight } from '../utils/haptic';
+import { log } from '../utils/logger';
+import { t } from '../i18n';
+import type { RootStackParamList } from '../types';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'Activation'>;
+
+const ActivationScreen: React.FC<Props> = () => {
+  const [code, setCode] = useState('');
+  const [activated, setActivated] = useState(false);
+  const [remaining, setRemaining] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    getActivationState().then((s) => setActivated(s.activated));
+    getRemainingEncrypts().then((r) => setRemaining(r));
+  }, []);
+
+  const handleActivate = useCallback(async () => {
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) {
+      Alert.alert(t('common_tip'), t('activation_need_code'));
+      return;
+    }
+    hapticLight();
+    setLoading(true);
+    log.info('Activation', `尝试激活: ${trimmed.slice(0, 4)}-****`);
+
+    const result = await activateWithCode(trimmed);
+    setLoading(false);
+
+    if (result.success) {
+      hapticSuccess();
+      setActivated(true);
+      log.info('Activation', '超级加密模式已激活');
+      Alert.alert(t('activation_success_title'), t('activation_success_msg'));
+    } else {
+      hapticError();
+      log.error('Activation', `激活失败: ${result.message}`);
+      Alert.alert(t('activation_fail_title'), result.message);
+    }
+  }, [code]);
+
+  const formatCode = (text: string) => {
+    const raw = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 16);
+    const parts = [raw.slice(0, 4), raw.slice(4, 8), raw.slice(8, 12), raw.slice(12, 16)];
+    return parts.filter(Boolean).join('-');
+  };
+
+  return (
+    <View style={styles.root}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.iconWrap}>
+          <Text style={styles.icon}>{activated ? '🚀' : '⚡'}</Text>
+        </View>
+
+        <Text style={styles.title}>
+          {activated ? t('activation_title_activated') : t('activation_title_unactivated')}
+        </Text>
+
+        {activated ? (
+          <>
+            <View style={styles.activatedCard}>
+              <Text style={styles.activatedTitle}>{t('activation_activated_title')}</Text>
+              <Text style={styles.activatedText}>
+                {t('activation_activated_feature1')}{'\n'}
+                {t('activation_activated_feature2')}{'\n'}
+                {t('activation_activated_feature3')}
+              </Text>
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.challengeCard}>
+              <Text style={styles.challengeTitle}>{t('activation_challenge_title')}</Text>
+              <Text style={styles.challengeText}>
+                {t('activation_challenge_text')}{'\n\n'}
+                {t('activation_challenge_bounty')}{'\n'}
+                {t('activation_challenge_desc')}{'\n'}
+                <Text style={styles.challengeReward}>{t('activation_challenge_reward')}</Text>{'\n'}
+                {t('activation_challenge_suffix')}
+              </Text>
+            </View>
+
+            <View style={styles.modeCompare}>
+              <View style={[styles.modeCard, styles.modeFree]}>
+                <Text style={styles.modeCardTitle}>{t('activation_mode_free')}</Text>
+                <Text style={styles.modeCardPrice}>{t('activation_mode_free_price')}</Text>
+                <Text style={styles.modeCardFeature}>{t('activation_mode_free_feature1').replace('{limit}', String(FREE_ENCRYPT_LIMIT))}</Text>
+                <Text style={styles.modeCardFeature}>{t('activation_mode_free_feature2')}</Text>
+                <Text style={styles.modeCardFeatureDim}>{t('activation_mode_free_feature3')}</Text>
+              </View>
+              <View style={[styles.modeCard, styles.modePro]}>
+                <Text style={styles.modeCardBadge}>{t('activation_mode_pro_badge')}</Text>
+                <Text style={styles.modeCardTitlePro}>{t('activation_mode_pro')}</Text>
+                <Text style={styles.modeCardPricePro}>{t('activation_mode_pro_price')}</Text>
+                <Text style={styles.modeCardPriceSub}>{t('activation_mode_pro_price_sub')}</Text>
+                <Text style={styles.modeCardFeaturePro}>{t('activation_mode_pro_feature1')}</Text>
+                <Text style={styles.modeCardFeaturePro}>{t('activation_mode_pro_feature2')}</Text>
+                <Text style={styles.modeCardFeaturePro}>{t('activation_mode_pro_feature3')}</Text>
+              </View>
+            </View>
+
+            <View style={styles.limitCard}>
+              <Text style={styles.limitTitle}>{t('activation_remaining_title')}</Text>
+              <Text style={styles.limitCount}>
+                {remaining} / {FREE_ENCRYPT_LIMIT}
+              </Text>
+              <View style={styles.progressBar}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${(remaining / FREE_ENCRYPT_LIMIT) * 100}%` },
+                  ]}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputCard}>
+              <Text style={styles.label}>{t('activation_input_label')}</Text>
+              <TextInput
+                style={styles.codeInput}
+                value={code}
+                onChangeText={(t_val) => setCode(formatCode(t_val))}
+                placeholder={t('activation_input_placeholder')}
+                placeholderTextColor={Colors.textHint}
+                autoCapitalize="characters"
+                maxLength={19}
+                autoFocus
+              />
+              <Text style={styles.hint}>
+                {t('activation_input_hint')}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.activateBtn, loading && styles.activateBtnDisabled]}
+              onPress={handleActivate}
+              disabled={loading}>
+              <Text style={styles.activateBtnText}>
+                {loading ? t('activation_verifying') : t('activation_btn')}
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </ScrollView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: Colors.background },
+  content: { padding: Colors.gap.lg, alignItems: 'center', paddingTop: 30 },
+  iconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+  },
+  icon: { fontSize: 36 },
+  title: {
+    fontSize: Colors.font.xxl,
+    fontWeight: '900',
+    color: Colors.text,
+    marginBottom: 20,
+  },
+  activatedCard: {
+    backgroundColor: Colors.successBg,
+    borderRadius: Colors.radius.md,
+    padding: 24,
+    width: '100%',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.success,
+  },
+  activatedTitle: {
+    fontSize: Colors.font.lg,
+    fontWeight: '700',
+    color: Colors.success,
+    marginBottom: 12,
+  },
+  activatedText: {
+    fontSize: Colors.font.md,
+    color: Colors.textSecondary,
+    textAlign: 'left',
+    lineHeight: 24,
+  },
+  challengeCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Colors.radius.md,
+    padding: 20,
+    width: '100%',
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+  },
+  challengeTitle: {
+    fontSize: Colors.font.lg,
+    fontWeight: '900',
+    color: Colors.primary,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  challengeText: {
+    fontSize: Colors.font.sm,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  challengeReward: {
+    fontSize: Colors.font.lg,
+    fontWeight: '900',
+    color: Colors.primary,
+  },
+  modeCompare: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+    marginBottom: 16,
+  },
+  modeCard: {
+    flex: 1,
+    borderRadius: Colors.radius.md,
+    padding: 16,
+    borderWidth: 1,
+    position: 'relative',
+  },
+  modeFree: {
+    backgroundColor: Colors.surface,
+    borderColor: Colors.border,
+  },
+  modePro: {
+    backgroundColor: Colors.surface,
+    borderColor: Colors.primary,
+    borderWidth: 2,
+  },
+  modeCardBadge: {
+    position: 'absolute',
+    top: -10,
+    right: 8,
+    backgroundColor: Colors.primary,
+    color: '#FFF',
+    fontSize: Colors.font.xs,
+    fontWeight: '700',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  modeCardTitle: {
+    fontSize: Colors.font.md,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+    marginBottom: 4,
+  },
+  modeCardTitlePro: {
+    fontSize: Colors.font.md,
+    fontWeight: '700',
+    color: Colors.primary,
+    marginBottom: 4,
+  },
+  modeCardPrice: {
+    fontSize: Colors.font.lg,
+    fontWeight: '900',
+    color: Colors.textSecondary,
+    marginBottom: 8,
+  },
+  modeCardPricePro: {
+    fontSize: Colors.font.lg,
+    fontWeight: '900',
+    color: Colors.primary,
+    marginBottom: 2,
+  },
+  modeCardPriceSub: {
+    fontSize: Colors.font.xs,
+    color: Colors.textSecondary,
+    marginBottom: 8,
+  },
+  modeCardFeature: {
+    fontSize: Colors.font.xs,
+    color: Colors.textHint,
+    marginBottom: 3,
+  },
+  modeCardFeatureDim: {
+    fontSize: Colors.font.xs,
+    color: Colors.border,
+    marginBottom: 3,
+    textDecorationLine: 'line-through',
+  },
+  modeCardFeaturePro: {
+    fontSize: Colors.font.xs,
+    color: Colors.text,
+    fontWeight: '600',
+    marginBottom: 3,
+  },
+  limitCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Colors.radius.md,
+    padding: 16,
+    width: '100%',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+  },
+  limitTitle: {
+    fontSize: Colors.font.sm,
+    color: Colors.textSecondary,
+    marginBottom: 4,
+  },
+  limitCount: {
+    fontSize: Colors.font.xl,
+    fontWeight: '900',
+    color: Colors.warning,
+    marginBottom: 8,
+  },
+  progressBar: {
+    height: 6,
+    width: '100%',
+    backgroundColor: Colors.surfaceVariant,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 6,
+    backgroundColor: Colors.warning,
+    borderRadius: 3,
+  },
+  inputCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Colors.radius.md,
+    padding: 20,
+    width: '100%',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  label: {
+    fontSize: Colors.font.sm,
+    color: Colors.textSecondary,
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  codeInput: {
+    backgroundColor: Colors.surfaceVariant,
+    borderRadius: Colors.radius.sm,
+    padding: 14,
+    fontSize: Colors.font.lg,
+    color: Colors.text,
+    fontWeight: '700',
+    letterSpacing: 2,
+    textAlign: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  hint: {
+    fontSize: Colors.font.xs,
+    color: Colors.textHint,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  activateBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: Colors.radius.md,
+    padding: 16,
+    width: '100%',
+    alignItems: 'center',
+  },
+  activateBtnDisabled: { opacity: 0.5 },
+  activateBtnText: {
+    color: Colors.buttonText,
+    fontSize: Colors.font.lg,
+    fontWeight: '700',
+  },
+});
+
+export default ActivationScreen;

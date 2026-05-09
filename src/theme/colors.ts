@@ -1,0 +1,26 @@
+const Colors = {
+  primary: '#E53935',
+  primaryDark: '#B71C1C',
+  primaryLight: '#FFCDD2',
+  background: '#F5F5F5',
+  surface: '#FFFFFF',
+  surfaceVariant: '#E8E8E8',
+  text: '#1A1A1A',
+  textSecondary: '#555555',
+  textHint: '#888888',
+  buttonText: '#FFFFFF',
+  border: '#D0D0D0',
+  divider: '#E0E0E0',
+  overlay: 'rgba(0,0,0,0.5)',
+  success: '#4CAF50',
+  successBg: '#E8F5E9',
+  warning: '#FF9800',
+  warningBg: '#FFF3E0',
+  error: '#F44336',
+  errorBg: '#FFCDD2',
+  radius: { sm: 4, md: 8, lg: 16 },
+  font: { xs: 10, sm: 12, md: 14, lg: 18, xl: 22, xxl: 28 },
+  gap: { sm: 8, md: 12, lg: 16, xl: 24 },
+};
+
+export default Colors;
