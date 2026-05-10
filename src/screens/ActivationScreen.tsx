@@ -7,6 +7,7 @@ import {
   TextInput,
   Alert,
   ScrollView,
+  Linking,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Colors from '../theme/colors';
@@ -54,6 +55,44 @@ const ActivationScreen: React.FC<Props> = () => {
       Alert.alert(t('activation_fail_title'), result.message);
     }
   }, [code]);
+
+  const WALLET_APPS = [
+    { name: 'Binance', scheme: 'bnc://app.binance.com/' },
+    { name: 'Trust Wallet', scheme: 'trust://' },
+    { name: 'MetaMask', scheme: 'metamask://' },
+    { name: 'TokenPocket', scheme: 'tpoutside://' },
+    { name: 'Bitpie', scheme: 'bitpie://' },
+    { name: 'Bitget', scheme: 'bitget://' },
+  ];
+
+  const handleGetCode = useCallback(async () => {
+    hapticLight();
+    const browserUrl = 'https://bscscan.com/token/0x92cB10E1D503b5c41f54fCC6B576176E6f29FBAD';
+
+    const results = await Promise.all(
+      WALLET_APPS.map(async (w) => {
+        const canOpen = await Linking.canOpenURL(w.scheme).catch(() => false);
+        return canOpen ? w : null;
+      }),
+    );
+    const available = results.filter(Boolean) as typeof WALLET_APPS;
+
+    if (available.length === 0) {
+      Linking.openURL(browserUrl);
+      return;
+    }
+
+    if (available.length === 1) {
+      Linking.openURL(available[0].scheme).catch(() => Linking.openURL(browserUrl));
+      return;
+    }
+
+    const buttons = [
+      ...available.map((w) => ({ text: w.name, onPress: () => Linking.openURL(w.scheme).catch(() => Linking.openURL(browserUrl)) })),
+      { text: t('activation_open_browser'), onPress: () => Linking.openURL(browserUrl) },
+    ];
+    Alert.alert(t('activation_select_wallet'), '', buttons);
+  }, []);
 
   const formatCode = (text: string) => {
     const raw = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 16);
@@ -153,6 +192,14 @@ const ActivationScreen: React.FC<Props> = () => {
               disabled={loading}>
               <Text style={styles.activateBtnText}>
                 {loading ? t('activation_verifying') : t('activation_btn')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.getCodeBtn}
+              onPress={handleGetCode}>
+              <Text style={styles.getCodeBtnText}>
+                {t('activation_get_code')}
               </Text>
             </TouchableOpacity>
           </>
@@ -388,6 +435,21 @@ const styles = StyleSheet.create({
   activateBtnText: {
     color: Colors.buttonText,
     fontSize: Colors.font.lg,
+    fontWeight: '700',
+  },
+  getCodeBtn: {
+    marginTop: 12,
+    padding: 14,
+    width: '100%',
+    alignItems: 'center',
+    borderRadius: Colors.radius.md,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    backgroundColor: 'transparent',
+  },
+  getCodeBtnText: {
+    color: Colors.primary,
+    fontSize: Colors.font.md,
     fontWeight: '700',
   },
 });

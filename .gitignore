@@ -30,3 +30,6 @@ Thumbs.db
 coverage/
 
 tools/
+site/
+.trae/
+android/app/.cxx/
