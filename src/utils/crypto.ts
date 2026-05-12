@@ -16,6 +16,7 @@ export async function encryptFile(
   fileName?: string,
   meta?: EncryptMeta,
   activated?: boolean,
+  activationCode?: string,
 ): Promise<string> {
   return CryptoCore.encryptFile(
     plainBase64,
@@ -24,6 +25,7 @@ export async function encryptFile(
     fileName || 'data',
     meta || null,
     activated || false,
+    activationCode || null,
   );
 }
 
@@ -32,12 +34,14 @@ export async function decryptFile(
   password: string,
   username: string,
   activated?: boolean,
+  activationCode?: string,
 ): Promise<string> {
   return CryptoCore.decryptFile(
     encryptedJson,
     password,
     username,
     activated || false,
+    activationCode || null,
   );
 }
 

@@ -17,7 +17,7 @@ import { encryptFile } from '../utils/crypto';
 import type { EncryptMeta } from '../utils/crypto';
 import { saveEncryptFile } from '../utils/workspace';
 import { getSession, getSessionPassword } from '../utils/user';
-import { canEncrypt, incrementEncryptCount, getRemainingEncrypts, getActivationState } from '../utils/activationState';
+import { canEncrypt, incrementEncryptCount, getRemainingEncrypts, getActivationState, getActivationCode } from '../utils/activationState';
 import { FREE_ENCRYPT_LIMIT } from '../utils/activation';
 import { hapticSuccess, hapticError, hapticLight } from '../utils/haptic';
 import { log } from '../utils/logger';
@@ -160,6 +160,7 @@ const EncryptScreen: React.FC<Props> = ({ navigation }) => {
         finalFileName,
         meta,
         (await getActivationState()).activated,
+        await getActivationCode(),
       );
       await saveEncryptFile(encrypted, finalFileName + '.red');
 

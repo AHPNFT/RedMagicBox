@@ -8,6 +8,7 @@ import {
   Alert,
   ScrollView,
   Linking,
+  NativeModules,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Colors from '../theme/colors';
@@ -56,42 +57,9 @@ const ActivationScreen: React.FC<Props> = () => {
     }
   }, [code]);
 
-  const WALLET_APPS = [
-    { name: 'Binance', scheme: 'bnc://app.binance.com/' },
-    { name: 'Trust Wallet', scheme: 'trust://' },
-    { name: 'MetaMask', scheme: 'metamask://' },
-    { name: 'TokenPocket', scheme: 'tpoutside://' },
-    { name: 'Bitpie', scheme: 'bitpie://' },
-    { name: 'Bitget', scheme: 'bitget://' },
-  ];
-
-  const handleGetCode = useCallback(async () => {
+  const handleGetCode = useCallback(() => {
     hapticLight();
-    const browserUrl = 'https://bscscan.com/token/0x92cB10E1D503b5c41f54fCC6B576176E6f29FBAD';
-
-    const results = await Promise.all(
-      WALLET_APPS.map(async (w) => {
-        const canOpen = await Linking.canOpenURL(w.scheme).catch(() => false);
-        return canOpen ? w : null;
-      }),
-    );
-    const available = results.filter(Boolean) as typeof WALLET_APPS;
-
-    if (available.length === 0) {
-      Linking.openURL(browserUrl);
-      return;
-    }
-
-    if (available.length === 1) {
-      Linking.openURL(available[0].scheme).catch(() => Linking.openURL(browserUrl));
-      return;
-    }
-
-    const buttons = [
-      ...available.map((w) => ({ text: w.name, onPress: () => Linking.openURL(w.scheme).catch(() => Linking.openURL(browserUrl)) })),
-      { text: t('activation_open_browser'), onPress: () => Linking.openURL(browserUrl) },
-    ];
-    Alert.alert(t('activation_select_wallet'), '', buttons);
+    Alert.alert(t('activation_get_code'), t('activation_get_code_hint'));
   }, []);
 
   const formatCode = (text: string) => {
@@ -120,6 +88,9 @@ const ActivationScreen: React.FC<Props> = () => {
                 {t('activation_activated_feature2')}{'\n'}
                 {t('activation_activated_feature3')}
               </Text>
+            </View>
+            <View style={styles.warningCard}>
+              <Text style={styles.warningText}>{t('activation_code_warning')}</Text>
             </View>
           </>
         ) : (
@@ -201,6 +172,9 @@ const ActivationScreen: React.FC<Props> = () => {
               <Text style={styles.getCodeBtnText}>
                 {t('activation_get_code')}
               </Text>
+              <Text style={styles.getCodeHint}>
+                {t('activation_get_code_hint')}
+              </Text>
             </TouchableOpacity>
           </>
         )}
@@ -250,6 +224,22 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'left',
     lineHeight: 24,
+  },
+  warningCard: {
+    backgroundColor: '#FFF3CD',
+    borderRadius: Colors.radius.md,
+    padding: 16,
+    width: '100%',
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#FFC107',
+  },
+  warningText: {
+    fontSize: Colors.font.sm,
+    color: '#856404',
+    textAlign: 'center',
+    lineHeight: 20,
+    fontWeight: '600',
   },
   challengeCard: {
     backgroundColor: Colors.surface,
@@ -451,6 +441,12 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: Colors.font.md,
     fontWeight: '700',
+  },
+  getCodeHint: {
+    color: Colors.textSecondary,
+    fontSize: Colors.font.sm,
+    marginTop: 6,
+    textAlign: 'center',
   },
 });
 
