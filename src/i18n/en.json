@@ -146,6 +146,11 @@
   "decrypt_scan_fail": "Scan Failed",
   "decrypt_pwd_empty": "Please enter password",
   "decrypt_action_fail": "Operation Failed",
+  "decrypt_fullscan_btn": "🔍 Full Scan",
+  "decrypt_fullscan_scanning": "Scanning device...",
+  "decrypt_fullscan_start": "Starting full device scan for .red files...",
+  "decrypt_fullscan_progress": "Scanned {scanned} dirs, found {found} .red files",
+  "decrypt_fullscan_result": "📂 Full Scan Results",
 
   "share_title": "📤 Secure Share",
   "share_selected_label": "Selected file:",

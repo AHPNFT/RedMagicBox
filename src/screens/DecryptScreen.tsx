@@ -17,7 +17,8 @@ import Colors from '../theme/colors';
 import NetworkWarning from '../components/NetworkWarning';
 import { decryptFile, parseEncryptMeta } from '../utils/crypto';
 import type { EncryptMeta } from '../utils/crypto';
-import { getDecryptOutputPath, listEncryptedFiles } from '../utils/workspace';
+import { getDecryptOutputPath, listEncryptedFiles, scanAllRedFiles } from '../utils/workspace';
+import type { ScannedRedFile } from '../utils/workspace';
 import { getSession, getSessionPassword } from '../utils/user';
 import { getActivationState, getActivationCode } from '../utils/activationState';
 import { hapticSuccess, hapticError, hapticLight } from '../utils/haptic';
@@ -80,6 +81,9 @@ const DecryptScreen: React.FC<Props> = ({ route, navigation }) => {
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [fullScanning, setFullScanning] = useState(false);
+  const [fullScanProgress, setFullScanProgress] = useState('');
+  const [externalFiles, setExternalFiles] = useState<RedFile[]>([]);
 
   useEffect(() => {
     getSession().then((s) => {
@@ -127,6 +131,53 @@ const DecryptScreen: React.FC<Props> = ({ route, navigation }) => {
       Alert.alert(t('decrypt_scan_fail'), e.message || t('decrypt_err_unknown'));
     } finally {
       setScanning(false);
+    }
+  }, []);
+
+  const fullScanAllFiles = useCallback(async () => {
+    log.touch('Decrypt', '点击全盘扫描');
+    setFullScanning(true);
+    setFullScanProgress(t('decrypt_fullscan_start'));
+    setExternalFiles([]);
+    try {
+      const session = await getSession();
+      const currentRedid = session || '';
+      const scanned: ScannedRedFile[] = await scanAllRedFiles((s, f) => {
+        setFullScanProgress(t('decrypt_fullscan_progress').replace('{scanned}', String(s)).replace('{found}', String(f)));
+      });
+      const redFiles: RedFile[] = [];
+      for (const f of scanned) {
+        let ownerRedid = 'unknown';
+        let meta: EncryptMeta = {};
+        try {
+          const RNFS = require('react-native-fs');
+          const content = await RNFS.readFile(f.path, 'utf8');
+          if (content) {
+            const parsed = JSON.parse(content);
+            ownerRedid = parsed.u || 'unknown';
+            meta = await parseEncryptMeta(content);
+          }
+        } catch {
+          ownerRedid = 'unknown';
+        }
+        redFiles.push({
+          name: f.name,
+          path: f.path,
+          size: f.size,
+          ownerRedid,
+          ownerRedidMasked: maskRedid(ownerRedid),
+          isOwner: ownerRedid === currentRedid,
+          meta,
+        });
+      }
+      setExternalFiles(redFiles);
+      log.info('Decrypt', `全盘扫描完成: ${redFiles.length}个外部文件`);
+    } catch (e: any) {
+      log.error('Decrypt', `全盘扫描失败: ${e.message || '未知错误'}`);
+      Alert.alert(t('decrypt_scan_fail'), e.message || t('decrypt_err_unknown'));
+    } finally {
+      setFullScanning(false);
+      setFullScanProgress('');
     }
   }, []);
 
@@ -294,15 +345,29 @@ const DecryptScreen: React.FC<Props> = ({ route, navigation }) => {
         contentContainerStyle={styles.content}>
         <View style={styles.scanHeader}>
           <Text style={styles.scanTitle}>{t('decrypt_scan_title')}</Text>
-          <TouchableOpacity
-            style={styles.scanBtn}
-            onPress={scanFiles}
-            disabled={scanning}>
-            <Text style={styles.scanBtnText}>
-              {scanning ? t('decrypt_scanning') : t('decrypt_scan_refresh')}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.scanBtnRow}>
+            <TouchableOpacity
+              style={styles.scanBtn}
+              onPress={scanFiles}
+              disabled={scanning}>
+              <Text style={styles.scanBtnText}>
+                {scanning ? t('decrypt_scanning') : t('decrypt_scan_refresh')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.scanBtn, styles.fullScanBtn]}
+              onPress={fullScanAllFiles}
+              disabled={fullScanning}>
+              <Text style={styles.fullScanBtnText}>
+                {fullScanning ? t('decrypt_fullscan_scanning') : t('decrypt_fullscan_btn')}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {fullScanProgress ? (
+          <Text style={styles.progressText}>{fullScanProgress}</Text>
+        ) : null}
 
         {scanning ? (
           <View style={styles.center}>
@@ -321,6 +386,26 @@ const DecryptScreen: React.FC<Props> = ({ route, navigation }) => {
             renderItem={renderItem}
             scrollEnabled={false}
           />
+        )}
+
+        {externalFiles.length > 0 && (
+          <>
+            <View style={styles.sectionDivider} />
+            <Text style={styles.sectionTitle}>{t('decrypt_fullscan_result')}</Text>
+            <FlatList
+              data={externalFiles}
+              keyExtractor={(item) => item.path}
+              renderItem={renderItem}
+              scrollEnabled={false}
+            />
+          </>
+        )}
+
+        {fullScanning && (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.centerText}>{t('decrypt_fullscan_scanning')}</Text>
+          </View>
         )}
 
         {loading && (
@@ -429,6 +514,35 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontSize: Colors.font.sm,
     fontWeight: '600',
+  },
+  scanBtnRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  fullScanBtn: {
+    backgroundColor: Colors.primary,
+  },
+  fullScanBtnText: {
+    color: Colors.buttonText,
+    fontSize: Colors.font.sm,
+    fontWeight: '700',
+  },
+  progressText: {
+    color: Colors.textHint,
+    fontSize: Colors.font.sm,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginVertical: 16,
+  },
+  sectionTitle: {
+    fontSize: Colors.font.md,
+    fontWeight: '700',
+    color: Colors.primary,
+    marginBottom: 12,
   },
   center: { alignItems: 'center', paddingVertical: 40 },
   centerText: {

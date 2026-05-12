@@ -8,14 +8,17 @@ import { t } from '../i18n';
 
 interface RNFSModule {
   DocumentDirectoryPath: string;
+  ExternalStorageDirectoryPath?: string;
+  DownloadDirectoryPath?: string;
   mkdir: (p: string) => Promise<void>;
   exists: (p: string) => Promise<boolean>;
   writeFile: (p: string, c: string, e?: string) => Promise<void>;
   readDir: (
     p: string,
-  ) => Promise<Array<{ name: string; size: number; isFile: () => boolean }>>;
+  ) => Promise<Array<{ name: string; size: number; isFile: () => boolean; isDirectory: () => boolean; path: string }>>;
   unlink: (p: string) => Promise<void>;
   readFile: (p: string, e?: string) => Promise<string>;
+  stat: (p: string) => Promise<{ isFile: () => boolean; isDirectory: () => boolean; size: number }>;
 }
 
 let RNFS: RNFSModule | null = null;
@@ -280,5 +283,85 @@ export async function checkAllPermissions(): Promise<
   for (const config of PERMISSION_CONFIGS) {
     results[config.name] = await checkPermission(config);
   }
+  return results;
+}
+
+const SKIP_DIRS = new Set([
+  'Android', 'android', '.android',
+  'MIUI', '.MIUI',
+  'System', 'system',
+  'cache', 'Cache', '.cache',
+  '.Trash', '.trash',
+  '.Thumbnail', '.thumbnail', 'thumbnail', 'Thumbnail',
+  'backups', '.backup',
+  'lost+found',
+  '.profig', '.profigos',
+  'dings', 'Dings',
+]);
+
+export interface ScannedRedFile {
+  name: string;
+  path: string;
+  size: number;
+  isExternal: boolean;
+}
+
+export async function scanAllRedFiles(
+  onProgress?: (scanned: number, found: number) => void,
+): Promise<ScannedRedFile[]> {
+  if (!RNFS) return [];
+
+  const startPaths: string[] = [];
+  const ext = (RNFS as any).ExternalStorageDirectoryPath;
+  const dl = (RNFS as any).DownloadDirectoryPath;
+  if (ext) startPaths.push(ext);
+  if (dl && dl !== ext) startPaths.push(dl);
+
+  if (startPaths.length === 0) return [];
+
+  const results: ScannedRedFile[] = [];
+  const visited = new Set<string>();
+  let scannedCount = 0;
+
+  async function walk(dir: string, depth: number): Promise<void> {
+    if (depth > 8) return;
+    if (visited.has(dir)) return;
+    visited.add(dir);
+
+    let entries: Array<{ name: string; size: number; isFile: () => boolean; isDirectory: () => boolean; path: string }>;
+    try {
+      if (!(await RNFS!.exists(dir))) return;
+      entries = await RNFS!.readDir(dir);
+    } catch {
+      return;
+    }
+
+    for (const entry of entries) {
+      scannedCount++;
+      if (onProgress && scannedCount % 50 === 0) {
+        onProgress(scannedCount, results.length);
+      }
+      try {
+        if (entry.isFile() && entry.name.endsWith('.red')) {
+          results.push({
+            name: entry.name,
+            path: entry.path || `${dir}/${entry.name}`,
+            size: entry.size,
+            isExternal: true,
+          });
+        } else if (entry.isDirectory && entry.isDirectory() && !SKIP_DIRS.has(entry.name)) {
+          const subPath = entry.path || `${dir}/${entry.name}`;
+          await walk(subPath, depth + 1);
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+
+  for (const p of startPaths) {
+    await walk(p, 0);
+  }
+
   return results;
 }

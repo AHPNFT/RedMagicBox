@@ -146,6 +146,11 @@
   "decrypt_scan_fail": "掃描失敗",
   "decrypt_pwd_empty": "請輸入密碼",
   "decrypt_action_fail": "操作失敗",
+  "decrypt_fullscan_btn": "🔍 全盤掃描",
+  "decrypt_fullscan_scanning": "掃描全盤...",
+  "decrypt_fullscan_start": "開始掃描全盤 .red 檔案...",
+  "decrypt_fullscan_progress": "已掃描 {scanned} 個目錄，發現 {found} 個 .red 檔案",
+  "decrypt_fullscan_result": "📂 全盤掃描結果",
 
   "share_title": "📤 安全分享",
   "share_selected_label": "已選擇檔案:",
