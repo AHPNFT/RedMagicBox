@@ -22,6 +22,7 @@ class MainApplication : Application(), ReactApplication, ShareApplication {
               add(FileOpenerPackage())
               add(CryptoPackage())
               add(AppChooserPackage())
+              add(StoragePermissionPackage())
             }
 
         override fun getJSMainModuleName(): String = "index"
