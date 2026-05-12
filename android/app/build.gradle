@@ -8,7 +8,7 @@ def enableProguardInReleaseBuilds = false
 def jscFlavor = 'org.webkit:android-jsc:+'
 
 def appVersionCode = (System.currentTimeMillis() / 1000).intValue()
-def appVersionName = "3.9.7"
+def appVersionName = "3.9.8"
 
 android {
     ndkVersion rootProject.ext.ndkVersion
@@ -68,7 +68,21 @@ android {
     }
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            outputFileName = "RedMagicBox.apk"
+            def version = variant.versionName
+            outputFileName = "RedMagicBox-v${version}.apk"
+        }
+    }
+}
+
+tasks.whenTaskAdded { task ->
+    if (task.name == 'assembleRelease') {
+        task.doLast {
+            def version = android.defaultConfig.versionName
+            def src = new File("${project.buildDir}/outputs/apk/release/RedMagicBox-v${version}.apk")
+            def dst = new File("${project.buildDir}/outputs/apk/release/RedMagicBox.apk")
+            if (src.exists()) {
+                dst.bytes = src.bytes
+            }
         }
     }
 }
