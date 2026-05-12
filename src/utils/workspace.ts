@@ -1,4 +1,4 @@
-import { PermissionsAndroid, Platform } from 'react-native';
+import { PermissionsAndroid, Platform, Linking, NativeModules } from 'react-native';
 import type {
   WorkspaceStatus,
   PermissionConfig,
@@ -304,6 +304,51 @@ export interface ScannedRedFile {
   path: string;
   size: number;
   isExternal: boolean;
+}
+
+export async function checkManageStoragePermission(): Promise<boolean> {
+  if (Platform.OS !== 'android') return true;
+  try {
+    const sdk = Platform.Version as number;
+    if (sdk >= 30) {
+      const env = NativeModules.SettingsManager?.settings;
+      if (env?.isManageStoragePermissionGranted) return true;
+      const RNFS = require('react-native-fs');
+      const testPath = RNFS.ExternalStorageDirectoryPath;
+      if (!testPath) return false;
+      try {
+        await RNFS.readDir(testPath);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    const granted = await PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
+    );
+    return granted;
+  } catch {
+    return false;
+  }
+}
+
+export async function requestManageStoragePermission(): Promise<boolean> {
+  if (Platform.OS !== 'android') return true;
+  try {
+    const sdk = Platform.Version as number;
+    if (sdk >= 30) {
+      const hasPermission = await checkManageStoragePermission();
+      if (hasPermission) return true;
+      await Linking.openSettings();
+      return false;
+    }
+    const result = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
+    );
+    return result === 'granted';
+  } catch {
+    return false;
+  }
 }
 
 export async function scanAllRedFiles(

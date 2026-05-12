@@ -17,7 +17,7 @@ import Colors from '../theme/colors';
 import NetworkWarning from '../components/NetworkWarning';
 import { decryptFile, parseEncryptMeta } from '../utils/crypto';
 import type { EncryptMeta } from '../utils/crypto';
-import { getDecryptOutputPath, listEncryptedFiles, scanAllRedFiles } from '../utils/workspace';
+import { getDecryptOutputPath, listEncryptedFiles, scanAllRedFiles, checkManageStoragePermission, requestManageStoragePermission } from '../utils/workspace';
 import type { ScannedRedFile } from '../utils/workspace';
 import { getSession, getSessionPassword } from '../utils/user';
 import { getActivationState, getActivationCode } from '../utils/activationState';
@@ -136,6 +136,23 @@ const DecryptScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const fullScanAllFiles = useCallback(async () => {
     log.touch('Decrypt', '点击全盘扫描');
+    const hasPermission = await checkManageStoragePermission();
+    if (!hasPermission) {
+      Alert.alert(
+        t('decrypt_fullscan_perm_title'),
+        t('decrypt_fullscan_perm_msg'),
+        [
+          { text: t('common_cancel'), style: 'cancel' },
+          {
+            text: t('decrypt_fullscan_perm_go'),
+            onPress: async () => {
+              await requestManageStoragePermission();
+            },
+          },
+        ],
+      );
+      return;
+    }
     setFullScanning(true);
     setFullScanProgress(t('decrypt_fullscan_start'));
     setExternalFiles([]);
