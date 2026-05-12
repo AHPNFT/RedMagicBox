@@ -16,7 +16,7 @@ import Colors from '../theme/colors';
 import { hapticLight, hapticSuccess, hapticError } from '../utils/haptic';
 import { t } from '../i18n';
 
-const APP_VERSION = '3.9.5';
+const APP_VERSION = '3.9.6';
 const WALLET_ADDR = '0x7E8be446201DEdC881bF9C004B983897621D73bd';
 const GITHUB_RELEASE = 'https://github.com/AHPNFT/RedMagicBox/releases/latest/download/RedMagicBox.apk';
 
