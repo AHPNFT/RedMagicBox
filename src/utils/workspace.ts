@@ -1,4 +1,4 @@
-import { PermissionsAndroid, Platform, Linking, NativeModules } from 'react-native';
+import { PermissionsAndroid, Platform, NativeModules } from 'react-native';
 import type {
   WorkspaceStatus,
   PermissionConfig,
@@ -309,24 +309,17 @@ export interface ScannedRedFile {
 export async function checkManageStoragePermission(): Promise<boolean> {
   if (Platform.OS !== 'android') return true;
   try {
-    const sdk = Platform.Version as number;
-    if (sdk >= 30) {
-      const env = NativeModules.SettingsManager?.settings;
-      if (env?.isManageStoragePermissionGranted) return true;
-      const RNFS = require('react-native-fs');
-      const testPath = RNFS.ExternalStorageDirectoryPath;
-      if (!testPath) return false;
-      try {
-        await RNFS.readDir(testPath);
-        return true;
-      } catch {
-        return false;
-      }
+    const StoragePermission = NativeModules.StoragePermission;
+    if (StoragePermission && StoragePermission.checkManageStoragePermission) {
+      return await StoragePermission.checkManageStoragePermission();
     }
-    const granted = await PermissionsAndroid.check(
-      PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
-    );
-    return granted;
+    const sdk = Platform.Version as number;
+    if (sdk < 30) {
+      return await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
+      );
+    }
+    return false;
   } catch {
     return false;
   }
@@ -335,17 +328,18 @@ export async function checkManageStoragePermission(): Promise<boolean> {
 export async function requestManageStoragePermission(): Promise<boolean> {
   if (Platform.OS !== 'android') return true;
   try {
-    const sdk = Platform.Version as number;
-    if (sdk >= 30) {
-      const hasPermission = await checkManageStoragePermission();
-      if (hasPermission) return true;
-      await Linking.openSettings();
-      return false;
+    const StoragePermission = NativeModules.StoragePermission;
+    if (StoragePermission && StoragePermission.requestManageStoragePermission) {
+      return await StoragePermission.requestManageStoragePermission();
     }
-    const result = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
-    );
-    return result === 'granted';
+    const sdk = Platform.Version as number;
+    if (sdk < 30) {
+      const result = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
+      );
+      return result === 'granted';
+    }
+    return false;
   } catch {
     return false;
   }

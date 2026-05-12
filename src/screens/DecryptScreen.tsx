@@ -65,7 +65,7 @@ function isImageExt(ex?: string): boolean {
   return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ex);
 }
 
-const DecryptScreen: React.FC<Props> = ({ route, navigation }) => {
+const DecryptScreen: React.FC<Props> = ({ navigation }) => {
   const [files, setFiles] = useState<RedFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -241,7 +241,7 @@ const DecryptScreen: React.FC<Props> = ({ route, navigation }) => {
     try {
       const RNFS = require('react-native-fs');
       const encryptedContent = await RNFS.readFile(pendingFile.path, 'utf8');
-      const decryptedBase64 = await decryptFile(encryptedContent, loginPwd, rawUsername, (await getActivationState()).activated, await getActivationCode());
+      const decryptedBase64 = await decryptFile(encryptedContent, loginPwd, rawUsername, (await getActivationState()).activated, (await getActivationCode()) ?? undefined);
 
       const ext = pendingFile.meta.ex || '';
       const originalName = pendingFile.meta.fn || pendingFile.name.replace(/\.red$/, '');
