@@ -166,6 +166,7 @@
   "share_fail": "共有失敗",
   "share_share_msg": "レッドマジックBox - 暗号化ファイル: {name}",
 
+  "filelist_title": "暗号化ファイル",
   "filelist_empty": "暗号化ファイルがありません",
   "filelist_delete_title": "削除の確認",
   "filelist_delete_msg": "{name}を削除しますか？元に戻せません。",
