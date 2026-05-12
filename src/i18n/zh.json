@@ -146,6 +146,11 @@
   "decrypt_scan_fail": "扫描失败",
   "decrypt_pwd_empty": "请输入密码",
   "decrypt_action_fail": "操作失败",
+  "decrypt_fullscan_btn": "🔍 全盘扫描",
+  "decrypt_fullscan_scanning": "扫描全盘...",
+  "decrypt_fullscan_start": "开始扫描全盘 .red 文件...",
+  "decrypt_fullscan_progress": "已扫描 {scanned} 个目录，发现 {found} 个 .red 文件",
+  "decrypt_fullscan_result": "📂 全盘扫描结果",
 
   "share_title": "📤 安全分享",
   "share_selected_label": "已选择文件:",

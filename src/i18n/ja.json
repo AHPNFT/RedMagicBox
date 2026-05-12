@@ -146,6 +146,11 @@
   "decrypt_scan_fail": "スキャン失敗",
   "decrypt_pwd_empty": "パスワードを入力してください",
   "decrypt_action_fail": "操作失敗",
+  "decrypt_fullscan_btn": "🔍 全スキャン",
+  "decrypt_fullscan_scanning": "全スキャン中...",
+  "decrypt_fullscan_start": ".redファイルの全スキャンを開始...",
+  "decrypt_fullscan_progress": "{scanned}ディレクトリスキャン、{found}個の.redファイル発見",
+  "decrypt_fullscan_result": "📂 全スキャン結果",
 
   "share_title": "📤 セキュア共有",
   "share_selected_label": "選択済みファイル:",
