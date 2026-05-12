@@ -8,7 +8,7 @@ def enableProguardInReleaseBuilds = false
 def jscFlavor = 'org.webkit:android-jsc:+'
 
 def appVersionCode = (System.currentTimeMillis() / 1000).intValue()
-def appVersionName = "3.9.6"
+def appVersionName = "3.9.7"
 
 android {
     ndkVersion rootProject.ext.ndkVersion
@@ -68,8 +68,7 @@ android {
     }
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            def version = variant.versionName
-            outputFileName = "RedMagicBox-v${version}.apk"
+            outputFileName = "RedMagicBox.apk"
         }
     }
 }
