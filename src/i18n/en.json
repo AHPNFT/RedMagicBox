@@ -151,6 +151,9 @@
   "decrypt_fullscan_start": "Starting full device scan for .red files...",
   "decrypt_fullscan_progress": "Scanned {scanned} dirs, found {found} .red files",
   "decrypt_fullscan_result": "📂 Full Scan Results",
+  "decrypt_fullscan_perm_title": "Storage Permission Required",
+  "decrypt_fullscan_perm_msg": "Full scan requires 'All files access' permission. Please enable it in system settings.",
+  "decrypt_fullscan_perm_go": "Go to Settings",
 
   "share_title": "📤 Secure Share",
   "share_selected_label": "Selected file:",

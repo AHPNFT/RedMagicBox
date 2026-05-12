@@ -151,6 +151,9 @@
   "decrypt_fullscan_start": ".red 파일 전체 스캔 시작...",
   "decrypt_fullscan_progress": "{scanned}개 디렉토리 스캔, {found}개 .red 파일 발견",
   "decrypt_fullscan_result": "📂 전체 스캔 결과",
+  "decrypt_fullscan_perm_title": "저장소 권한 필요",
+  "decrypt_fullscan_perm_msg": "전체 스캔에는 '모든 파일 접근' 권한이 필요합니다. 시스템 설정에서 활성화해주세요.",
+  "decrypt_fullscan_perm_go": "설정으로",
 
   "share_title": "📤 보안 공유",
   "share_selected_label": "선택된 파일:",

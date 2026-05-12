@@ -151,6 +151,9 @@
   "decrypt_fullscan_start": ".redファイルの全スキャンを開始...",
   "decrypt_fullscan_progress": "{scanned}ディレクトリスキャン、{found}個の.redファイル発見",
   "decrypt_fullscan_result": "📂 全スキャン結果",
+  "decrypt_fullscan_perm_title": "ストレージ権限が必要",
+  "decrypt_fullscan_perm_msg": "全スキャンには「すべてのファイルへのアクセス」権限が必要です。システム設定で有効にしてください。",
+  "decrypt_fullscan_perm_go": "設定へ",
 
   "share_title": "📤 セキュア共有",
   "share_selected_label": "選択済みファイル:",
