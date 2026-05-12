@@ -19,6 +19,11 @@ export async function getActivationState(): Promise<ActivationState> {
   return { activated: false };
 }
 
+export async function getActivationCode(): Promise<string | null> {
+  const state = await getActivationState();
+  return state.activated ? (state.code || null) : null;
+}
+
 export async function activateWithCode(code: string): Promise<{ success: boolean; message: string }> {
   if (!(await validateActivationCode(code))) {
     return { success: false, message: t('activation_code_invalid') };

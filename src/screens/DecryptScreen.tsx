@@ -19,7 +19,7 @@ import { decryptFile, parseEncryptMeta } from '../utils/crypto';
 import type { EncryptMeta } from '../utils/crypto';
 import { getDecryptOutputPath, listEncryptedFiles } from '../utils/workspace';
 import { getSession, getSessionPassword } from '../utils/user';
-import { getActivationState } from '../utils/activationState';
+import { getActivationState, getActivationCode } from '../utils/activationState';
 import { hapticSuccess, hapticError, hapticLight } from '../utils/haptic';
 import { log } from '../utils/logger';
 import { t } from '../i18n';
@@ -173,7 +173,7 @@ const DecryptScreen: React.FC<Props> = ({ route, navigation }) => {
     try {
       const RNFS = require('react-native-fs');
       const encryptedContent = await RNFS.readFile(pendingFile.path, 'utf8');
-      const decryptedBase64 = await decryptFile(encryptedContent, loginPwd, rawUsername, (await getActivationState()).activated);
+      const decryptedBase64 = await decryptFile(encryptedContent, loginPwd, rawUsername, (await getActivationState()).activated, await getActivationCode());
 
       const ext = pendingFile.meta.ex || '';
       const originalName = pendingFile.meta.fn || pendingFile.name.replace(/\.red$/, '');

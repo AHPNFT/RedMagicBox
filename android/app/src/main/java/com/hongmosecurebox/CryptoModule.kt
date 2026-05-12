@@ -49,9 +49,10 @@ class CryptoModule(reactContext: ReactApplicationContext) :
         return hash.joinToString("") { "%02x".format(it) }.substring(0, 32)
     }
 
-    private fun deriveKeyAndIV(password: String, salt: String): Pair<ByteArray, ByteArray> {
+    private fun deriveKeyAndIV(password: String, salt: String, activationCode: String?): Pair<ByteArray, ByteArray> {
+        val combinedPassword = if (activationCode != null) password + activationCode else password
         val saltBytes = salt.toByteArray(Charsets.UTF_8)
-        val spec = PBEKeySpec(password.toCharArray(), saltBytes, PBKDF2_ITERATIONS, KEY_SIZE_BITS + IV_SIZE_BITS)
+        val spec = PBEKeySpec(combinedPassword.toCharArray(), saltBytes, PBKDF2_ITERATIONS, KEY_SIZE_BITS + IV_SIZE_BITS)
         val factory = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
         val derived = factory.generateSecret(spec).encoded
 
@@ -79,11 +80,13 @@ class CryptoModule(reactContext: ReactApplicationContext) :
         fileName: String,
         meta: ReadableMap?,
         activated: Boolean,
+        activationCode: String?,
         promise: Promise
     ) {
         try {
             val salt = generateSalt(fileName)
-            val (keyBytes, ivBytes) = deriveKeyAndIV(password, salt)
+            val effectiveCode = if (activated && activationCode != null) activationCode else null
+            val (keyBytes, ivBytes) = deriveKeyAndIV(password, salt, effectiveCode)
 
             val cipher = Cipher.getInstance("AES/CBC/PKCS7Padding")
             cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(keyBytes, "AES"), IvParameterSpec(ivBytes))
@@ -103,7 +106,7 @@ class CryptoModule(reactContext: ReactApplicationContext) :
             json.put("c", tamperedCipher)
             json.put("h", bytesToHex(hmac))
             json.put("u", username)
-            json.put("v", 3)
+            json.put("v", if (effectiveCode != null) 4 else 3)
 
             if (activated) {
                 json.put("a", 1)
@@ -128,6 +131,7 @@ class CryptoModule(reactContext: ReactApplicationContext) :
         password: String,
         username: String,
         activated: Boolean,
+        activationCode: String?,
         promise: Promise
     ) {
         try {
@@ -141,10 +145,12 @@ class CryptoModule(reactContext: ReactApplicationContext) :
                 throw Exception("DECRYPT_ERR_NEED_ACTIVATE")
             }
 
-            val salt = payload.getString("s")
-            val (keyBytes, ivBytes) = deriveKeyAndIV(password, salt)
-
             val version = payload.optInt("v", 1)
+            val salt = payload.getString("s")
+
+            val effectiveCode = if (version >= 4 && payload.optInt("a", 0) == 1 && activationCode != null) activationCode else null
+            val (keyBytes, ivBytes) = deriveKeyAndIV(password, salt, effectiveCode)
+
             val cipherField = payload.getString("c")
 
             val cipherBase64 = if (version >= 3) {

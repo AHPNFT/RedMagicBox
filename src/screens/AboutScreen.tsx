@@ -16,8 +16,8 @@ import Colors from '../theme/colors';
 import { hapticLight, hapticSuccess, hapticError } from '../utils/haptic';
 import { t } from '../i18n';
 
-const APP_VERSION = '3.7.6';
-const RMAB_CONTRACT = '0x92cB10E1D503b5c41f54fCC6B576176E6f29FBAD';
+const APP_VERSION = '3.9.4';
+const WALLET_ADDR = '0x7E8be446201DEdC881bF9C004B983897621D73bd';
 const GITHUB_RELEASE = `https://github.com/AHPNFT/RedMagicBox/releases/download/v${APP_VERSION}/RedMagicBox-v${APP_VERSION}.apk`;
 
 const AboutScreen: React.FC = () => {
@@ -26,7 +26,7 @@ const AboutScreen: React.FC = () => {
 
   const handleCopyContract = useCallback(() => {
     hapticLight();
-    Clipboard.setString(RMAB_CONTRACT);
+    Clipboard.setString(WALLET_ADDR);
     Alert.alert(t('common_copied'), t('about_contract_copied'));
   }, []);
 
@@ -73,6 +73,12 @@ const AboutScreen: React.FC = () => {
             />
             <Text style={styles.posterTitle}>{t('about_share_poster_title')}</Text>
             <Text style={styles.posterSubtitle}>{t('about_share_poster_subtitle')}</Text>
+            <View style={styles.posterChallenge}>
+              <Text style={styles.posterChallengeTitle}>🏆 {t('activation_challenge_text')}</Text>
+              <Text style={styles.posterChallengeBounty}>🔥 {t('activation_challenge_desc')}</Text>
+              <Text style={styles.posterChallengeReward}>{t('activation_challenge_reward')}</Text>
+              <Text style={styles.posterChallengeBounty}>{t('activation_challenge_suffix')}</Text>
+            </View>
           </View>
           <View style={styles.posterBottom}>
             <View style={styles.posterQrWrap}>
@@ -83,6 +89,7 @@ const AboutScreen: React.FC = () => {
               />
             </View>
             <Text style={styles.posterQrHint}>{t('about_share_poster_qr_hint')}</Text>
+            <Text style={styles.posterSafe}>{t('about_share_poster_safe')}</Text>
             <Text style={styles.posterLink}>{GITHUB_RELEASE}</Text>
             <Text style={styles.posterCopyright}>© 2024-2026 RedMagicBox</Text>
           </View>
@@ -148,7 +155,7 @@ const AboutScreen: React.FC = () => {
 
         <View style={[styles.card, styles.contractCard]}>
           <Text style={styles.sectionTitle}>{t('about_contract_title')}</Text>
-          <Text style={styles.contractAddr}>{RMAB_CONTRACT}</Text>
+          <Text style={styles.contractAddr}>{WALLET_ADDR}</Text>
           <TouchableOpacity
             style={styles.copyBtn}
             onPress={handleCopyContract}
@@ -211,7 +218,7 @@ const styles = StyleSheet.create({
   posterTitle: {
     fontSize: 42,
     fontWeight: '900',
-    color: '#ffffff',
+    color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
     marginBottom: 12,
     letterSpacing: -1,
@@ -221,12 +228,44 @@ const styles = StyleSheet.create({
   },
   posterSubtitle: {
     fontSize: 22,
-    color: 'rgba(255,255,255,0.75)',
+    color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
     fontWeight: '500',
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
+  },
+  posterChallenge: {
+    marginTop: 32,
+    backgroundColor: 'rgba(230,57,70,0.15)',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(230,57,70,0.4)',
+    alignItems: 'center',
+  },
+  posterChallengeTitle: {
+    fontSize: 18,
+    color: 'rgba(255,255,255,0.7)',
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  posterChallengeBounty: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.7)',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  posterChallengeReward: {
+    fontSize: 28,
+    color: 'rgba(255,255,255,0.7)',
+    fontWeight: '900',
+    textAlign: 'center',
+    marginVertical: 6,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   posterBottom: {
     alignItems: 'center',
@@ -244,7 +283,16 @@ const styles = StyleSheet.create({
   },
   posterQrHint: {
     fontSize: 18,
-    color: 'rgba(255,255,255,0.8)',
+    color: 'rgba(255,255,255,0.7)',
+    fontWeight: '600',
+    marginBottom: 10,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  posterSafe: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.7)',
     fontWeight: '600',
     marginBottom: 10,
     textShadowColor: 'rgba(0,0,0,0.5)',
@@ -253,14 +301,14 @@ const styles = StyleSheet.create({
   },
   posterLink: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.55)',
+    color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
     paddingHorizontal: 40,
     marginBottom: 16,
   },
   posterCopyright: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.4)',
+    color: 'rgba(255,255,255,0.7)',
   },
   content: { padding: Colors.gap.lg },
   shareBtn: {
