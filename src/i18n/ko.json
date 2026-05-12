@@ -166,6 +166,7 @@
   "share_fail": "공유 실패",
   "share_share_msg": "레드매직Box - 암호화 파일: {name}",
 
+  "filelist_title": "암호화 파일",
   "filelist_empty": "암호화 파일 없음",
   "filelist_delete_title": "삭제 확인",
   "filelist_delete_msg": "{name}을(를) 삭제하시겠습니까? 복구할 수 없습니다.",

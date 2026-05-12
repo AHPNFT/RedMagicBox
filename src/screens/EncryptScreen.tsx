@@ -160,7 +160,7 @@ const EncryptScreen: React.FC<Props> = ({ navigation }) => {
         finalFileName,
         meta,
         (await getActivationState()).activated,
-        await getActivationCode(),
+        (await getActivationCode()) ?? undefined,
       );
       await saveEncryptFile(encrypted, finalFileName + '.red');
 

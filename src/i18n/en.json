@@ -166,6 +166,7 @@
   "share_fail": "Share Failed",
   "share_share_msg": "RedMagicBox - Encrypted file: {name}",
 
+  "filelist_title": "Encrypted Files",
   "filelist_empty": "No encrypted files",
   "filelist_delete_title": "Confirm Delete",
   "filelist_delete_msg": "Delete {name}? This cannot be undone.",

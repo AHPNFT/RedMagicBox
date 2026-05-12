@@ -10,7 +10,14 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Colors from '../theme/colors';
-import { listEncryptedFiles, formatFileSize } from '../utils/workspace';
+import {
+  listEncryptedFiles,
+  formatFileSize,
+  scanAllRedFiles,
+  checkManageStoragePermission,
+  requestManageStoragePermission,
+} from '../utils/workspace';
+import type { ScannedRedFile } from '../utils/workspace';
 import { hapticLight, hapticSuccess, hapticError } from '../utils/haptic';
 import { log } from '../utils/logger';
 import { t } from '../i18n';
@@ -45,7 +52,10 @@ const ShareScreen: React.FC<Props> = ({ route }) => {
   const fileName = route.params?.fileName;
   const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null);
   const [files, setFiles] = useState<FileInfo[]>([]);
+  const [externalFiles, setExternalFiles] = useState<FileInfo[]>([]);
   const [sharing, setSharing] = useState(false);
+  const [fullScanning, setFullScanning] = useState(false);
+  const [fullScanProgress, setFullScanProgress] = useState('');
 
   useEffect(() => {
     if (filePath && fileName) {
@@ -62,6 +72,52 @@ const ShareScreen: React.FC<Props> = ({ route }) => {
     }
     listEncryptedFiles().then(setFiles);
   }, [filePath, fileName]);
+
+  const fullScanAllFiles = useCallback(async () => {
+    const hasPermission = await checkManageStoragePermission();
+    if (!hasPermission) {
+      Alert.alert(
+        t('decrypt_fullscan_perm_title'),
+        t('decrypt_fullscan_perm_msg'),
+        [
+          { text: t('common_cancel'), style: 'cancel' },
+          {
+            text: t('decrypt_fullscan_perm_go'),
+            onPress: async () => {
+              await requestManageStoragePermission();
+            },
+          },
+        ],
+      );
+      return;
+    }
+    setFullScanning(true);
+    setFullScanProgress(t('decrypt_fullscan_start'));
+    setExternalFiles([]);
+    try {
+      const scanned: ScannedRedFile[] = await scanAllRedFiles((s, f) => {
+        setFullScanProgress(t('decrypt_fullscan_progress').replace('{scanned}', String(s)).replace('{found}', String(f)));
+      });
+      const mapped: FileInfo[] = scanned.map((f) => ({
+        name: f.name,
+        originalName: f.name.replace(/\.red$/, ''),
+        path: f.path,
+        size: f.size,
+        fileType: f.name.split('.').slice(-2, -1)[0] || 'unknown',
+        createdAt: Date.now(),
+        modifiedAt: Date.now(),
+        mimeType: 'application/octet-stream',
+      }));
+      setExternalFiles(mapped);
+      log.info('Share', `全盘扫描完成: ${mapped.length}个外部文件`);
+    } catch (e: any) {
+      log.error('Share', `全盘扫描失败: ${e.message || '未知错误'}`);
+      Alert.alert(t('decrypt_scan_fail'), e.message || t('decrypt_err_unknown'));
+    } finally {
+      setFullScanning(false);
+      setFullScanProgress('');
+    }
+  }, []);
 
   const handleShare = useCallback(async () => {
     if (!RNShare || !RNFS) {
@@ -108,6 +164,26 @@ const ShareScreen: React.FC<Props> = ({ route }) => {
     }
   }, [selectedFile]);
 
+  const renderFileItem = useCallback(
+    (f: FileInfo) => (
+      <TouchableOpacity
+        key={f.path}
+        style={styles.fileItem}
+        onPress={() => {
+          hapticLight();
+          setSelectedFile(f);
+        }}>
+        <Text style={styles.fileItemName} numberOfLines={1}>
+          {f.name}
+        </Text>
+        <Text style={styles.fileItemMeta}>
+          {formatFileSize(f.size)}
+        </Text>
+      </TouchableOpacity>
+    ),
+    [],
+  );
+
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -130,26 +206,42 @@ const ShareScreen: React.FC<Props> = ({ route }) => {
           </View>
         ) : (
           <View style={styles.pickSection}>
-            <Text style={styles.pickHint}>{t('share_pick_hint')}</Text>
-            {files.length === 0 ? (
+            <View style={styles.pickHeader}>
+              <Text style={styles.pickHint}>{t('share_pick_hint')}</Text>
+              <TouchableOpacity
+                style={styles.fullScanBtn}
+                onPress={fullScanAllFiles}
+                disabled={fullScanning}>
+                <Text style={styles.fullScanBtnText}>
+                  {fullScanning ? t('decrypt_fullscan_scanning') : t('decrypt_fullscan_btn')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {fullScanProgress ? (
+              <Text style={styles.progressText}>{fullScanProgress}</Text>
+            ) : null}
+
+            {files.length === 0 && externalFiles.length === 0 && !fullScanning ? (
               <Text style={styles.emptyText}>{t('share_no_files')}</Text>
             ) : (
-              files.map((f) => (
-                <TouchableOpacity
-                  key={f.path}
-                  style={styles.fileItem}
-                  onPress={() => {
-                    hapticLight();
-                    setSelectedFile(f);
-                  }}>
-                  <Text style={styles.fileItemName} numberOfLines={1}>
-                    {f.name}
-                  </Text>
-                  <Text style={styles.fileItemMeta}>
-                    {formatFileSize(f.size)}
-                  </Text>
-                </TouchableOpacity>
-              ))
+              <>
+                {files.map((f) => renderFileItem(f))}
+                {externalFiles.length > 0 && (
+                  <>
+                    <View style={styles.sectionDivider} />
+                    <Text style={styles.sectionTitle}>{t('decrypt_fullscan_result')}</Text>
+                    {externalFiles.map((f) => renderFileItem(f))}
+                  </>
+                )}
+              </>
+            )}
+
+            {fullScanning && (
+              <View style={styles.center}>
+                <ActivityIndicator size="small" color={Colors.primary} />
+                <Text style={styles.centerText}>{t('decrypt_fullscan_scanning')}</Text>
+              </View>
             )}
           </View>
         )}
@@ -217,10 +309,44 @@ const styles = StyleSheet.create({
   pickSection: {
     marginBottom: 20,
   },
+  pickHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   pickHint: {
     fontSize: Colors.font.md,
     color: Colors.textSecondary,
-    marginBottom: 12,
+    flex: 1,
+  },
+  fullScanBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: Colors.radius.sm,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  fullScanBtnText: {
+    color: Colors.buttonText,
+    fontSize: Colors.font.sm,
+    fontWeight: '700',
+  },
+  progressText: {
+    color: Colors.textHint,
+    fontSize: Colors.font.sm,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginVertical: 12,
+  },
+  sectionTitle: {
+    fontSize: Colors.font.md,
+    fontWeight: '700',
+    color: Colors.primary,
+    marginBottom: 8,
   },
   emptyText: {
     fontSize: Colors.font.md,
@@ -245,6 +371,15 @@ const styles = StyleSheet.create({
   fileItemMeta: {
     fontSize: Colors.font.sm,
     color: Colors.textHint,
+  },
+  center: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  centerText: {
+    color: Colors.textHint,
+    fontSize: Colors.font.sm,
+    marginTop: 6,
   },
   shareBtn: {
     backgroundColor: Colors.primary,

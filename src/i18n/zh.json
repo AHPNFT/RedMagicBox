@@ -166,6 +166,7 @@
   "share_fail": "分享失败",
   "share_share_msg": "红魔Box - 加密文件: {name}",
 
+  "filelist_title": "加密文件",
   "filelist_empty": "暂无加密文件",
   "filelist_delete_title": "确认删除",
   "filelist_delete_msg": "确定删除 {name}？此操作不可恢复。",
