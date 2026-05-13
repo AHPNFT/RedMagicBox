@@ -1,79 +1,122 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# 🔴 RedMagicBox
 
-# Getting Started
+**全球顶级密码管理工具 · 军事级加密安全隔离箱**
 
->**Note**: Make sure you have completed the [React Native - Environment Setup](https://reactnative.dev/docs/environment-setup) instructions till "Creating a new application" step, before proceeding.
+RedMagicBox 采用 AES-256-CBC + PBKDF2-SHA256 + HMAC-SHA256 三重加密体系，所有运算均在本地完成，用户数据永远不会离开设备。
 
-## Step 1: Start the Metro Server
+[![Download](https://img.shields.io/badge/Download-APK-e63946?style=for-the-badge)](https://github.com/AHPNFT/RedMagicBox/releases/latest/download/RedMagicBox.apk)
+[![License](https://img.shields.io/badge/License-RMPUL-blue?style=for-the-badge)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Android-green?style=for-the-badge)]()
 
-First, you will need to start **Metro**, the JavaScript _bundler_ that ships _with_ React Native.
+---
 
-To start Metro, run the following command from the _root_ of your React Native project:
+## ✨ 核心功能
 
-```bash
-# using npm
-npm start
+### 🛡️ 军事级加密
+- **AES-256-CBC** 对称加密
+- **PBKDF2-SHA256** 100,000 次密钥推导
+- **HMAC-SHA256** 完整性校验
+- **C++ Native SO** 加密引擎（代码混淆）
 
-# OR using Yarn
-yarn start
+### 📂 文件加密/解密
+- 支持任意文件和文本内容加密为 `.red` 格式
+- 自定义加密文件名
+- 加密后可选删除原文件
+- 跨设备解密（RedID + 密码 + 激活码）
+
+### 🔍 全盘扫描
+- 递归扫描设备存储中所有 `.red` 文件
+- 实时显示扫描进度
+- 自动识别文件归属 RedID
+- 支持解密、文件列表、安全分享三个页面
+
+### 🔑 激活码系统
+- 解锁无限次加密
+- 参与加密密钥推导，跨设备解密必备
+- 格式：`XXXX-XXXX-XXXX-XXXX`（HMAC-SHA256 校验）
+- 在线购买自动获取激活码
+
+### 📤 安全分享
+- 系统级分享，支持所有 Android 分享渠道
+- 分享时复制到缓存，不暴露原始路径
+- 一键生成带二维码的分享海报
+
+### 🌍 多语言支持
+| 繁體中文 | 簡體中文 | English | 日本語 | 한국어 |
+|:---:|:---:|:---:|:---:|:---:|
+| zh-TW | zh | en | ja | ko |
+
+---
+
+## 🔐 加密流程
+
+```
+原始文件 → Base64编码 → PBKDF2(RedID+密码+激活码, salt, 100000次) → AES-256-CBC加密 → HMAC-SHA256签名 → .red文件
 ```
 
-## Step 2: Start your Application
-
-Let Metro Bundler run in its _own_ terminal. Open a _new_ terminal from the _root_ of your React Native project. Run the following command to start your _Android_ or _iOS_ app:
-
-### For Android
-
-```bash
-# using npm
-npm run android
-
-# OR using Yarn
-yarn android
+```
+.red文件 → HMAC校验 → PBKDF2(RedID+密码+激活码, salt, 100000次) → AES-256-CBC解密 → Base64解码 → 原始文件
 ```
 
-### For iOS
+---
 
-```bash
-# using npm
-npm run ios
+## 💰 获取激活码
 
-# OR using Yarn
-yarn ios
-```
+| 币种 | 金额 | 链路 |
+|------|------|------|
+| USDT | 9.9 | BEP-20 (BSC) |
+| RMAB | 999 | BEP-20 (BSC) |
 
-If everything is set up _correctly_, you should see your new app running in your _Android Emulator_ or _iOS Simulator_ shortly provided you have set up your emulator/simulator correctly.
+**收款地址**: `0x7E8be446201DEdC881bF9C004B983897621D73bd`
 
-This is one way to run your app — you can also run it directly from within Android Studio and Xcode respectively.
+> ⚠️ 激活码参与加密，遗失将无法解密文件。泄露激活码有泄露加密文件的风险。
 
-## Step 3: Modifying your App
+---
 
-Now that you have successfully run the app, let's modify it.
+## 📥 下载安装
 
-1. Open `App.tsx` in your text editor of choice and edit some lines.
-2. For **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Developer Menu** (<kbd>Ctrl</kbd> + <kbd>M</kbd> (on Window and Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (on macOS)) to see your changes!
+[**下载最新版 APK**](https://github.com/AHPNFT/RedMagicBox/releases/latest/download/RedMagicBox.apk)
 
-   For **iOS**: Hit <kbd>Cmd ⌘</kbd> + <kbd>R</kbd> in your iOS Simulator to reload the app and see your changes!
+---
 
-## Congratulations! :tada:
+## 🏗️ 技术架构
 
-You've successfully run and modified your React Native App. :partying_face:
+| 模块 | 功能 |
+|------|------|
+| CryptoModule | C++ 加密/解密核心引擎 |
+| StoragePermissionModule | Android 11+ 所有文件访问权限管理 |
+| AppChooserModule | 原生应用选择器 |
+| FileOpenerModule | 文件打开功能 |
 
-### Now what?
+| 权限 | 用途 |
+|------|------|
+| MANAGE_EXTERNAL_STORAGE | 全盘扫描 .red 文件（Android 11+） |
+| READ_EXTERNAL_STORAGE | 读取外部存储文件 |
+| WRITE_EXTERNAL_STORAGE | 保存加密文件 |
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [Introduction to React Native](https://reactnative.dev/docs/getting-started).
+---
 
-# Troubleshooting
+## 📋 版本更新
 
-If you can't get this to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+| 版本 | 更新内容 |
+|------|----------|
+| 3.9.14 | 加密文件名仅使用自定义名称 + .red 后缀 |
+| 3.9.13 | 更新 App Logo |
+| 3.9.12 | 文件列表、安全分享页面添加全盘扫描 |
+| 3.9.11 | 原生 StoragePermission 模块，修复全盘扫描权限问题 |
+| 3.9.10 | 解密页面添加全盘扫描 .red 文件功能 |
 
-# Learn More
+---
 
-To learn more about React Native, take a look at the following resources:
+## 📄 许可证
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+本项目采用 [RedMagicBox Personal Use License (RMPUL)](LICENSE) 许可证。
+
+- ✅ 个人免费使用
+- ❌ 商业使用需授权
+
+---
+
+<p align="center">
+  红魔团队匠心打造 · 链接来自全球开源社区，请放心下载
+</p>
