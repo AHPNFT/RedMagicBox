@@ -61,9 +61,7 @@ const EncryptScreen: React.FC<Props> = ({ navigation }) => {
     if (f) {
       log.file('Encrypt', `selected: ${f.name} | ${(f.size / 1024).toFixed(1)}KB`);
       setFile({ uri: f.uri, name: f.name, size: f.size, type: f.type });
-      if (!customFileName) {
-        setCustomFileName(f.name.replace(/\.[^.]+$/, ''));
-      }
+      setCustomFileName('');
       setResult(null);
     }
   }, [customFileName]);
