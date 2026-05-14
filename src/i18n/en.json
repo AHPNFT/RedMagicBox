@@ -233,6 +233,7 @@
   "activation_success_title": "🚀 Super Encryption Activated",
   "activation_success_msg": "RedMagicBox Super Encryption Mode enabled!\nUnlimited encryption + Super encryption protection!\n\n⚠️ IMPORTANT: Your activation code is part of the encryption key.\nKeep it safe! If lost, you CANNOT decrypt your files.\nIf leaked, others may decrypt your files.",
   "activation_code_warning": "⚠️ Activation code is part of encryption key!\nLost = Cannot decrypt | Leaked = File risk",
+  "activation_code_save_hint": "💡 Store your activation code on third-party cloud platforms (email, cloud storage, etc.) for easy access and safekeeping",
   "activation_fail_title": "Activation Failed",
   "activation_need_code": "Please enter activation code",
   "activation_step_local": "Cryptographic verification...",
