@@ -303,7 +303,7 @@ class CryptoModule(reactContext: ReactApplicationContext) :
                 val mainnetRpc = "https://bsc-dataseed.binance.org"
                 val mainnetContract = "0x0000000000000000000000000000000000000000"
                 val testnetRpc = "https://bsc-testnet-rpc.publicnode.com"
-                val testnetContract = "0x5dD2344f1eb1EEa9915625962fA3ca19d875810d"
+                val testnetContract = "0xc8E779DDC9709b2089758432e09945DbEF834755"
 
                 val rpcEndpoints = listOf(
                     Pair(mainnetRpc, mainnetContract),
