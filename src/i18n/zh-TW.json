@@ -300,6 +300,14 @@
 
   "activation_code_invalid": "啟用碼無效",
   "activation_code_success": "啟用成功",
+  "activation_step_local": "密碼學驗證中...",
+  "activation_step_chain": "區塊鏈驗證中...",
+  "activation_step_done": "驗證完成",
+  "activation_chain_hint": "正在透過區塊鏈智能合約驗證啟用碼真實性\n請保持網路暢通 · 僅讀取鏈上資料，不上傳任何資訊",
+  "activation_chain_fail_title": "⚠️ 鏈上驗證未通過",
+  "activation_chain_fail_msg": "此啟用碼未經智能合約生成，可能存在安全風險。\n請確認啟用碼來源是否可信。",
+  "activation_chain_skip_msg": "超級加密模式已啟用！\n\n⚠️ 區塊鏈驗證暫時不可用，已跳過鏈上驗證。\n啟用碼功能正常，建議聯網後重新驗證。",
+  "activation_success_chain_msg": "紅魔Box超級加密模式已啟用！\n無限加密 + 超級加密檔案保護！\n區塊鏈驗證通過 · 啟用碼真實性已確認\n\n⚠️ 重要提醒：啟用碼已參與加密金鑰派生，\n請務必妥善保管啟用碼！\n若遺失啟用碼將無法解密超級加密檔案，\n若洩露啟用碼他人可能解密您的檔案。",
 
   "fs_unavailable": "檔案系統不可用",
 

@@ -7,13 +7,12 @@ import {
   TextInput,
   Alert,
   ScrollView,
-  Linking,
-  NativeModules,
+  ActivityIndicator,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Colors from '../theme/colors';
 import { activateWithCode, getActivationState, getRemainingEncrypts } from '../utils/activationState';
-import { FREE_ENCRYPT_LIMIT } from '../utils/activation';
+import { FREE_ENCRYPT_LIMIT, verifyActivationCodeOnChain } from '../utils/activation';
 import { hapticSuccess, hapticError, hapticLight } from '../utils/haptic';
 import { log } from '../utils/logger';
 import { t } from '../i18n';
@@ -21,11 +20,14 @@ import type { RootStackParamList } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Activation'>;
 
+type VerifyStep = 'idle' | 'local_check' | 'chain_check' | 'done';
+
 const ActivationScreen: React.FC<Props> = () => {
   const [code, setCode] = useState('');
   const [activated, setActivated] = useState(false);
   const [remaining, setRemaining] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [verifyStep, setVerifyStep] = useState<VerifyStep>('idle');
 
   useEffect(() => {
     getActivationState().then((s) => setActivated(s.activated));
@@ -40,20 +42,47 @@ const ActivationScreen: React.FC<Props> = () => {
     }
     hapticLight();
     setLoading(true);
+    setVerifyStep('local_check');
     log.info('Activation', `尝试激活: ${trimmed.slice(0, 4)}-****`);
 
     const result = await activateWithCode(trimmed);
-    setLoading(false);
 
-    if (result.success) {
-      hapticSuccess();
-      setActivated(true);
-      log.info('Activation', '超级加密模式已激活');
-      Alert.alert(t('activation_success_title'), t('activation_success_msg'));
-    } else {
+    if (!result.success) {
+      setLoading(false);
+      setVerifyStep('idle');
       hapticError();
       log.error('Activation', `激活失败: ${result.message}`);
       Alert.alert(t('activation_fail_title'), result.message);
+      return;
+    }
+
+    setVerifyStep('chain_check');
+
+    const chainResult = await verifyActivationCodeOnChain(trimmed);
+
+    if (chainResult === 'verified') {
+      setLoading(false);
+      setVerifyStep('done');
+      hapticSuccess();
+      setActivated(true);
+      log.info('Activation', '超级加密模式已激活（链上验证通过）');
+      Alert.alert(t('activation_success_title'), t('activation_success_chain_msg'));
+    } else if (chainResult === 'not_found') {
+      setLoading(false);
+      setVerifyStep('idle');
+      hapticError();
+      log.warn('Activation', '链上验证未通过：激活码非合约生成');
+      Alert.alert(t('activation_chain_fail_title'), t('activation_chain_fail_msg'));
+    } else {
+      setLoading(false);
+      setVerifyStep('idle');
+      hapticSuccess();
+      setActivated(true);
+      log.info('Activation', '超级加密模式已激活（链上验证跳过）');
+      Alert.alert(
+        t('activation_success_title'),
+        t('activation_chain_skip_msg')
+      );
     }
   }, [code]);
 
@@ -66,6 +95,19 @@ const ActivationScreen: React.FC<Props> = () => {
     const raw = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 16);
     const parts = [raw.slice(0, 4), raw.slice(4, 8), raw.slice(8, 12), raw.slice(12, 16)];
     return parts.filter(Boolean).join('-');
+  };
+
+  const getVerifyText = () => {
+    switch (verifyStep) {
+      case 'local_check':
+        return t('activation_step_local');
+      case 'chain_check':
+        return t('activation_step_chain');
+      case 'done':
+        return t('activation_step_done');
+      default:
+        return t('activation_btn');
+    }
   };
 
   return (
@@ -161,10 +203,21 @@ const ActivationScreen: React.FC<Props> = () => {
               style={[styles.activateBtn, loading && styles.activateBtnDisabled]}
               onPress={handleActivate}
               disabled={loading}>
-              <Text style={styles.activateBtnText}>
-                {loading ? t('activation_verifying') : t('activation_btn')}
-              </Text>
+              {loading ? (
+                <View style={styles.btnRow}>
+                  <ActivityIndicator size="small" color="#FFF" />
+                  <Text style={styles.activateBtnText}>{getVerifyText()}</Text>
+                </View>
+              ) : (
+                <Text style={styles.activateBtnText}>{t('activation_btn')}</Text>
+              )}
             </TouchableOpacity>
+
+            {loading && verifyStep === 'chain_check' && (
+              <View style={styles.chainHintCard}>
+                <Text style={styles.chainHintText}>{t('activation_chain_hint')}</Text>
+              </View>
+            )}
 
             <TouchableOpacity
               style={styles.getCodeBtn}
@@ -426,6 +479,27 @@ const styles = StyleSheet.create({
     color: Colors.buttonText,
     fontSize: Colors.font.lg,
     fontWeight: '700',
+  },
+  btnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  chainHintCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Colors.radius.md,
+    padding: 14,
+    width: '100%',
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    alignItems: 'center',
+  },
+  chainHintText: {
+    fontSize: Colors.font.xs,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   getCodeBtn: {
     marginTop: 12,
