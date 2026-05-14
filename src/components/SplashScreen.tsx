@@ -4,7 +4,7 @@ import { checkRoot } from '../utils/rootDetection';
 import { t } from '../i18n';
 
 const SPLASH_IMG = require('../assets/hongmo.jpg');
-const APP_VERSION = '3.9.19';
+const APP_VERSION = '3.9.20';
 
 interface SplashScreenProps {
   onFinish: (rooted: boolean) => void;
