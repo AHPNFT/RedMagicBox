@@ -133,6 +133,7 @@ const ActivationScreen: React.FC<Props> = () => {
             </View>
             <View style={styles.warningCard}>
               <Text style={styles.warningText}>{t('activation_code_warning')}</Text>
+              <Text style={styles.saveHintText}>{t('activation_code_save_hint')}</Text>
             </View>
           </>
         ) : (
@@ -293,6 +294,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     fontWeight: '600',
+  },
+  saveHintText: {
+    fontSize: Colors.font.xs,
+    color: '#0d6efd',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 8,
+    fontWeight: '500',
   },
   challengeCard: {
     backgroundColor: Colors.surface,

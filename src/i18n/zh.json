@@ -233,6 +233,7 @@
   "activation_success_title": "🚀 超级加密模式已激活",
   "activation_success_msg": "红魔Box超级加密模式已开启！\n无限加密 + 超级加密文件保护！\n\n⚠️ 重要提醒：启用码已参与加密密钥派生，\n请务必妥善保管启用码！\n若遗失启用码将无法解密超级加密文件，\n若泄露启用码他人可能解密您的文件。",
   "activation_code_warning": "⚠️ 启用码参与加密，请妥善保管！\n遗失 = 无法解密 | 泄露 = 文件风险",
+  "activation_code_save_hint": "💡 建议将激活码存放在第三方联网平台（邮箱、网盘等），确保随时可取用且不易遗失",
   "activation_fail_title": "激活失败",
   "activation_need_code": "请输入激活码",
   "activation_step_local": "密码学验证中...",
