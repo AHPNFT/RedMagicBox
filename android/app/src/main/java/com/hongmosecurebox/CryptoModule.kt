@@ -300,32 +300,51 @@ class CryptoModule(reactContext: ReactApplicationContext) :
 
                 val data = "0xa4f2d72b" + bodyPadded
 
-                val rpcUrl = "https://bsc-dataseed.binance.org"
-                val contractAddress = "0x0000000000000000000000000000000000000000"
+                val mainnetRpc = "https://bsc-dataseed.binance.org"
+                val mainnetContract = "0x0000000000000000000000000000000000000000"
+                val testnetRpc = "https://bsc-testnet-rpc.publicnode.com"
+                val testnetContract = "0x5dD2344f1eb1EEa9915625962fA3ca19d875810d"
 
-                val jsonBody = """{"jsonrpc":"2.0","method":"eth_call","params":[{"to":"$contractAddress","data":"$data"},"latest"],"id":1}"""
+                val rpcEndpoints = listOf(
+                    Pair(mainnetRpc, mainnetContract),
+                    Pair(testnetRpc, testnetContract)
+                )
 
-                val connection = URL(rpcUrl).openConnection() as java.net.HttpURLConnection
-                connection.requestMethod = "POST"
-                connection.setRequestProperty("Content-Type", "application/json")
-                connection.doOutput = true
-                connection.connectTimeout = 15000
-                connection.readTimeout = 15000
+                var verified = false
+                for ((rpcUrl, contractAddress) in rpcEndpoints) {
+                    try {
+                        val jsonBody = """{"jsonrpc":"2.0","method":"eth_call","params":[{"to":"$contractAddress","data":"$data"},"latest"],"id":1}"""
 
-                connection.outputStream.use { os ->
-                    val input = jsonBody.toByteArray(Charsets.UTF_8)
-                    os.write(input, 0, input.size)
+                        val connection = URL(rpcUrl).openConnection() as java.net.HttpURLConnection
+                        connection.requestMethod = "POST"
+                        connection.setRequestProperty("Content-Type", "application/json")
+                        connection.doOutput = true
+                        connection.connectTimeout = 10000
+                        connection.readTimeout = 10000
+
+                        connection.outputStream.use { os ->
+                            val input = jsonBody.toByteArray(Charsets.UTF_8)
+                            os.write(input, 0, input.size)
+                        }
+
+                        val response = connection.inputStream.bufferedReader().use { it.readText() }
+                        connection.disconnect()
+
+                        val jsonResponse = JSONObject(response)
+                        val result = jsonResponse.optString("result", "0x")
+
+                        val isUsed = result != "0x" && result != "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+                        if (isUsed) {
+                            verified = true
+                            break
+                        }
+                    } catch (_: Exception) {
+                        continue
+                    }
                 }
 
-                val response = connection.inputStream.bufferedReader().use { it.readText() }
-                connection.disconnect()
-
-                val jsonResponse = JSONObject(response)
-                val result = jsonResponse.optString("result", "0x")
-
-                val isUsed = result != "0x" && result != "0x0000000000000000000000000000000000000000000000000000000000000000"
-
-                if (isUsed) {
+                if (verified) {
                     promise.resolve("verified")
                 } else {
                     promise.resolve("not_found")
