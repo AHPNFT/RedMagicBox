@@ -16,3 +16,5 @@
 0	41	0	clean	b2adc435cbe8e4d7
 17	2783	8002723615946843	CMakeFiles/cryptocore.dir/crypto-core.cpp.o	e3de6e18c3c91264
 2783	4048	8002723628876056	F:/HongmoSecureBox/android/app/build/intermediates/cxx/RelWithDebInfo/572k503z/obj/x86_64/libcryptocore.so	3838afe2ac0e92b
+248	1635	8004227136232376	CMakeFiles/cryptocore.dir/crypto-core.cpp.o	e3de6e18c3c91264
+1635	4685	8004227166916127	F:/HongmoSecureBox/android/app/build/intermediates/cxx/RelWithDebInfo/572k503z/obj/x86_64/libcryptocore.so	3838afe2ac0e92b

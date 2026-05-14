@@ -12,4 +12,5 @@ object CryptoNative {
     external fun getCipherMagicPos(): Int
     external fun getActivationKey(): String
     external fun getActivationSalt(): String
+    external fun validateActivationCodeV2(code: String): Boolean
 }

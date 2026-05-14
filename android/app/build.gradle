@@ -8,7 +8,7 @@ def enableProguardInReleaseBuilds = false
 def jscFlavor = 'org.webkit:android-jsc:+'
 
 def appVersionCode = (System.currentTimeMillis() / 1000).intValue()
-def appVersionName = "3.9.15"
+def appVersionName = "3.9.16"
 
 android {
     ndkVersion rootProject.ext.ndkVersion

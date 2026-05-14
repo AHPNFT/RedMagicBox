@@ -188,6 +188,12 @@ class CryptoModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun validateActivationCode(code: String, promise: Promise) {
         try {
+            val v2Result = CryptoNative.validateActivationCodeV2(code)
+            if (v2Result) {
+                promise.resolve(true)
+                return
+            }
+
             if (code.length != 19) {
                 promise.resolve(false)
                 return
