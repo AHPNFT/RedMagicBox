@@ -7,12 +7,16 @@ import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReadableMap
 import org.json.JSONObject
+import java.net.URL
 import java.security.MessageDigest
 import javax.crypto.Cipher
 import javax.crypto.Mac
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class CryptoModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
@@ -268,5 +272,67 @@ class CryptoModule(reactContext: ReactApplicationContext) :
             else -> "strong"
         }
         promise.resolve(result)
+    }
+
+    @ReactMethod
+    fun verifyActivationCodeOnChain(code: String, promise: Promise) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                if (code.length != 19) {
+                    promise.resolve("invalid_format")
+                    return@launch
+                }
+
+                val raw = code.replace("-", "")
+                if (raw.length != 16) {
+                    promise.resolve("invalid_format")
+                    return@launch
+                }
+
+                val body = raw.substring(0, 12)
+
+                val bodyBytes = body.toByteArray(Charsets.UTF_8)
+                val bodyHex = bodyBytes.joinToString("") {
+                    String.format("%02x", it)
+                }
+
+                val bodyPadded = bodyHex.padEnd(64, '0')
+
+                val data = "0xa4f2d72b" + bodyPadded
+
+                val rpcUrl = "https://bsc-dataseed.binance.org"
+                val contractAddress = "0x0000000000000000000000000000000000000000"
+
+                val jsonBody = """{"jsonrpc":"2.0","method":"eth_call","params":[{"to":"$contractAddress","data":"$data"},"latest"],"id":1}"""
+
+                val connection = URL(rpcUrl).openConnection() as java.net.HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.doOutput = true
+                connection.connectTimeout = 15000
+                connection.readTimeout = 15000
+
+                connection.outputStream.use { os ->
+                    val input = jsonBody.toByteArray(Charsets.UTF_8)
+                    os.write(input, 0, input.size)
+                }
+
+                val response = connection.inputStream.bufferedReader().use { it.readText() }
+                connection.disconnect()
+
+                val jsonResponse = JSONObject(response)
+                val result = jsonResponse.optString("result", "0x")
+
+                val isUsed = result != "0x" && result != "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+                if (isUsed) {
+                    promise.resolve("verified")
+                } else {
+                    promise.resolve("not_found")
+                }
+            } catch (e: Exception) {
+                promise.resolve("network_error")
+            }
+        }
     }
 }

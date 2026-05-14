@@ -65,10 +65,15 @@ static void sha256(const unsigned char *data, size_t len, unsigned char out[32])
 
     size_t totalLen = len + 1 + 9;
     size_t padLen = ((56 - (totalLen % 64)) + 64) % 64;
-    size_t blockCount = (totalLen + padLen) / 64;
+    size_t bufSize = totalLen + padLen;
+    if (bufSize == 0 || (bufSize % 64) != 0) {
+        bufSize = ((bufSize / 64) + 1) * 64;
+    }
+    size_t blockCount = bufSize / 64;
 
-    unsigned char *padded = new unsigned char[blockCount * 64];
-    memset(padded, 0, blockCount * 64);
+    unsigned char padded[256];
+    memset(padded, 0, sizeof(padded));
+    if (bufSize > sizeof(padded)) return;
     memcpy(padded, data, len);
     padded[len] = 0x80;
     unsigned long long bitLen = (unsigned long long)len * 8;
@@ -103,8 +108,6 @@ static void sha256(const unsigned char *data, size_t len, unsigned char out[32])
 
         H0 += a; H1 += b; H2 += c; H3 += d; H4 += e; H5 += f; H6 += g; H7 += h;
     }
-
-    delete[] padded;
 
     unsigned int H[8] = {H0, H1, H2, H3, H4, H5, H6, H7};
     for (int i = 0; i < 8; i++) {
@@ -168,7 +171,8 @@ Java_com_hongmosecurebox_CryptoNative_validateActivationCodeV2(JNIEnv *env, jobj
         return JNI_FALSE;
     }
 
-    char raw[17] = {0};
+    char raw[17];
+    memset(raw, 0, 17);
     int pos = 0;
     for (int i = 0; i < 19 && pos < 16; i++) {
         if (codeStr[i] != '-') {
@@ -184,8 +188,10 @@ Java_com_hongmosecurebox_CryptoNative_validateActivationCodeV2(JNIEnv *env, jobj
 
     if (pos != 16) return JNI_FALSE;
 
-    char body[13] = {0};
-    char checksum[5] = {0};
+    char body[13];
+    memset(body, 0, 13);
+    char checksum[5];
+    memset(checksum, 0, 5);
     memcpy(body, raw, 12);
     memcpy(checksum, raw + 12, 4);
 
@@ -193,21 +199,27 @@ Java_com_hongmosecurebox_CryptoNative_validateActivationCodeV2(JNIEnv *env, jobj
 
     unsigned char seedPadded[32];
     memset(seedPadded, 0, 32);
-    memcpy(seedPadded, seedStr.c_str(), seedStr.length());
+    size_t seedLen = seedStr.length();
+    if (seedLen > 32) seedLen = 32;
+    memcpy(seedPadded, seedStr.c_str(), seedLen);
 
     unsigned char hashInput[44];
+    memset(hashInput, 0, 44);
     memcpy(hashInput, seedPadded, 32);
     memcpy(hashInput + 32, body, 12);
 
     unsigned char hashOut[32];
+    memset(hashOut, 0, 32);
     sha256(hashInput, 44, hashOut);
 
-    char computed[5] = {0};
+    char computed[5];
+    memset(computed, 0, 5);
     for (int i = 0; i < 4; i++) {
         computed[i] = CHARS[hashOut[i] % 36];
     }
 
-    return (memcmp(computed, checksum, 4) == 0) ? JNI_TRUE : JNI_FALSE;
+    bool result = (memcmp(computed, checksum, 4) == 0);
+    return result ? JNI_TRUE : JNI_FALSE;
 }
 
 }

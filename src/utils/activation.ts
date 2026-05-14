@@ -10,6 +10,11 @@ export async function validateActivationCode(code: string): Promise<boolean> {
   return CryptoCore.validateActivationCode(code);
 }
 
+export async function verifyActivationCodeOnChain(code: string): Promise<'verified' | 'not_found' | 'network_error' | 'invalid_format'> {
+  if (!CODE_PATTERN.test(code)) return 'invalid_format';
+  return CryptoCore.verifyActivationCodeOnChain(code);
+}
+
 export function isActivationCodeFormat(code: string): boolean {
   return CODE_PATTERN.test(code);
 }
