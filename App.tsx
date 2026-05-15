@@ -12,6 +12,13 @@ function App(): React.JSX.Element {
   const [showSplash, setShowSplash] = useState(true);
   const [rooted, setRooted] = useState(false);
   const [ready, setReady] = useState(false);
+  const [langReady, setLangReady] = useState(false);
+
+  useEffect(() => {
+    initLang().then(() => {
+      setLangReady(true);
+    });
+  }, []);
 
   const handleSplashFinish = (isRooted: boolean) => {
     setRooted(isRooted);
@@ -19,12 +26,11 @@ function App(): React.JSX.Element {
 
     (async () => {
       try {
-        const lang = await initLang();
         const ws = await initWorkspace();
         await initLogger(ws.initialized ? ws.path : undefined);
 
         log.start('App', '========== 应用启动 ==========');
-        log.info('App', `版本: 3.7.2 | 平台: Android | RN: 0.73.6 | 语言: ${lang}`);
+        log.info('App', `版本: 3.9.22 | 平台: Android | 语言: ${await initLang()}`);
 
         const netStatus = await checkNetworkStatus();
         log.net('App', `初始网络状态: ${netStatus}`);
@@ -51,6 +57,7 @@ function App(): React.JSX.Element {
   }, []);
 
   if (showSplash) {
+    if (!langReady) return null;
     return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
