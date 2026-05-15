@@ -137,7 +137,7 @@ const ShareScreen: React.FC<Props> = ({ route }) => {
         Alert.alert(t('common_error'), t('share_file_not_exist'));
         return;
       }
-      const sharePath = `${RNFS.CachesDirectoryPath}/hongmo_share_${Date.now()}_${target.name}`;
+      const sharePath = `${RNFS.CachesDirectoryPath}/${target.name}`;
       await RNFS.copyFile(target.path, sharePath);
       await RNShare.open({
         title: target.name || t('share_title'),
