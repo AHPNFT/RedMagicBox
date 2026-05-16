@@ -31,5 +31,6 @@ coverage/
 
 tools/
 site/
+site-deploy/
 .trae/
 android/app/.cxx/
