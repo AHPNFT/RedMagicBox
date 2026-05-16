@@ -6,7 +6,11 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.bridge.WritableMap
+import com.facebook.react.bridge.WritableArray
+import com.facebook.react.bridge.Arguments
 import org.json.JSONObject
+import org.json.JSONArray
 import java.net.URL
 import java.security.MessageDigest
 import javax.crypto.Cipher
@@ -274,6 +278,49 @@ class CryptoModule(reactContext: ReactApplicationContext) :
         promise.resolve(result)
     }
 
+    companion object {
+        private const val MAINNET_RPC = "https://bsc.publicnode.com"
+        private const val TESTNET_RPC = "https://bsc-testnet-rpc.publicnode.com"
+
+        private const val MAINNET_CONTRACT = "0x224C8F36b6bf5f7EA3E8D61ef9e06d995B540f71"
+        private const val TESTNET_CONTRACT = "0x84BB41Eb7eBf3b78E47626ec54595f9235dC41bD"
+
+        private const val FUNC_IS_CODE_REGISTERED = "0xa4f2d72b"
+        private const val FUNC_BNB_PRICE = "0x42966c68"
+        private const val FUNC_GET_ACTIVATION_CODE = "0x2d0d2373"
+        private const val FUNC_GET_ALL_TOKENS = "0x624d3c5c"
+        private const val FUNC_TOKEN_PRICES = "0x3a98ef39"
+        private const val FUNC_SUPPORTED = "0x3f4ba83a"
+    }
+
+    private fun ethCall(rpcUrl: String, contractAddress: String, data: String): String? {
+        return try {
+            val jsonBody = """{"jsonrpc":"2.0","method":"eth_call","params":[{"to":"$contractAddress","data":"$data"},"latest"],"id":1}"""
+            val connection = URL(rpcUrl).openConnection() as java.net.HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.doOutput = true
+            connection.connectTimeout = 10000
+            connection.readTimeout = 10000
+            connection.outputStream.use { os ->
+                os.write(jsonBody.toByteArray(Charsets.UTF_8))
+            }
+            val response = connection.inputStream.bufferedReader().use { it.readText() }
+            connection.disconnect()
+            val jsonResponse = JSONObject(response)
+            val result = jsonResponse.optString("result", "0x")
+            if (result == "0x" || result == "0x0000000000000000000000000000000000000000000000000000000000000000") null else result
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun ethCallWithFallback(data: String): String? {
+        val mainnetResult = ethCall(MAINNET_RPC, MAINNET_CONTRACT, data)
+        if (mainnetResult != null) return mainnetResult
+        return ethCall(TESTNET_RPC, TESTNET_CONTRACT, data)
+    }
+
     @ReactMethod
     fun verifyActivationCodeOnChain(code: String, promise: Promise) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -290,67 +337,102 @@ class CryptoModule(reactContext: ReactApplicationContext) :
                 }
 
                 val body = raw.substring(0, 12)
-
                 val bodyBytes = body.toByteArray(Charsets.UTF_8)
-                val bodyHex = bodyBytes.joinToString("") {
-                    String.format("%02x", it)
-                }
-
+                val bodyHex = bodyBytes.joinToString("") { String.format("%02x", it) }
                 val bodyPadded = bodyHex.padEnd(64, '0')
+                val data = FUNC_IS_CODE_REGISTERED + bodyPadded
 
-                val data = "0xa4f2d72b" + bodyPadded
-
-                val mainnetRpc = "https://bsc-dataseed.binance.org"
-                val mainnetContract = "0x0000000000000000000000000000000000000000"
-                val testnetRpc = "https://bsc-testnet-rpc.publicnode.com"
-                val testnetContract = "0x84BB41Eb7eBf3b78E47626ec54595f9235dC41bD"
-
-                val rpcEndpoints = listOf(
-                    Pair(mainnetRpc, mainnetContract),
-                    Pair(testnetRpc, testnetContract)
-                )
-
-                var verified = false
-                for ((rpcUrl, contractAddress) in rpcEndpoints) {
-                    try {
-                        val jsonBody = """{"jsonrpc":"2.0","method":"eth_call","params":[{"to":"$contractAddress","data":"$data"},"latest"],"id":1}"""
-
-                        val connection = URL(rpcUrl).openConnection() as java.net.HttpURLConnection
-                        connection.requestMethod = "POST"
-                        connection.setRequestProperty("Content-Type", "application/json")
-                        connection.doOutput = true
-                        connection.connectTimeout = 10000
-                        connection.readTimeout = 10000
-
-                        connection.outputStream.use { os ->
-                            val input = jsonBody.toByteArray(Charsets.UTF_8)
-                            os.write(input, 0, input.size)
-                        }
-
-                        val response = connection.inputStream.bufferedReader().use { it.readText() }
-                        connection.disconnect()
-
-                        val jsonResponse = JSONObject(response)
-                        val result = jsonResponse.optString("result", "0x")
-
-                        val isUsed = result != "0x" && result != "0x0000000000000000000000000000000000000000000000000000000000000000"
-
-                        if (isUsed) {
-                            verified = true
-                            break
-                        }
-                    } catch (_: Exception) {
-                        continue
-                    }
-                }
-
-                if (verified) {
+                val result = ethCallWithFallback(data)
+                if (result != null) {
                     promise.resolve("verified")
                 } else {
                     promise.resolve("not_found")
                 }
             } catch (e: Exception) {
                 promise.resolve("network_error")
+            }
+        }
+    }
+
+    @ReactMethod
+    fun getPaymentInfo(promise: Promise) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val info = Arguments.createMap()
+
+                val bnbPriceData = ethCallWithFallback(FUNC_BNB_PRICE)
+                if (bnbPriceData != null) {
+                    val bnbPriceWei = bnbPriceData.removePrefix("0x").toBigInteger(16)
+                    val bnbPriceBnb = bnbPriceWei.toDouble() / 1e18
+                    info.putDouble("bnbPrice", bnbPriceBnb)
+                }
+
+                val tokensResult = Arguments.createArray()
+                val tokenAddresses = listOf(
+                    "0x55d398326f99059fF775485246999027B3197955",
+                    "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+                    "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
+                )
+                val tokenSymbols = listOf("USDT", "BUSD", "USDC")
+                val tokenDecimals = listOf(18, 18, 18)
+
+                for (i in tokenAddresses.indices) {
+                    val addr = tokenAddresses[i].removePrefix("0x").lowercase()
+                    val addrPadded = addr.padEnd(64, '0')
+
+                    val supportedData = ethCallWithFallback(FUNC_SUPPORTED + addrPadded)
+                    val isSupported = supportedData != null && supportedData.removePrefix("0x").takeLast(64).takeLast(1) == "1"
+
+                    if (isSupported) {
+                        val priceData = ethCallWithFallback(FUNC_TOKEN_PRICES + addrPadded)
+                        val tokenInfo = Arguments.createMap()
+                        tokenInfo.putString("address", tokenAddresses[i])
+                        tokenInfo.putString("symbol", tokenSymbols[i])
+                        tokenInfo.putInt("decimals", tokenDecimals[i])
+                        if (priceData != null) {
+                            val priceRaw = priceData.removePrefix("0x").toBigInteger(16)
+                            val priceHuman = priceRaw.toDouble() / Math.pow(10.0, tokenDecimals[i].toDouble())
+                            tokenInfo.putDouble("price", priceHuman)
+                        }
+                        tokensResult.pushMap(tokenInfo)
+                    }
+                }
+
+                info.putArray("tokens", tokensResult)
+                info.putString("contractAddress", MAINNET_CONTRACT)
+                info.putString("adminWallet", "0x7E8be446201DEdC881bF9C004B983897621D73bd")
+                promise.resolve(info)
+            } catch (e: Exception) {
+                promise.reject("PAYMENT_INFO_ERR", e.message ?: "Failed to get payment info")
+            }
+        }
+    }
+
+    @ReactMethod
+    fun getActivationCodeByBuyer(buyerAddress: String, promise: Promise) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val addr = buyerAddress.removePrefix("0x").lowercase()
+                val addrPadded = addr.padEnd(64, '0')
+                val data = FUNC_GET_ACTIVATION_CODE + addrPadded
+
+                val result = ethCallWithFallback(data)
+                if (result != null) {
+                    val hexStr = result.removePrefix("0x")
+                    val offset = hexStr.substring(0, 64).toLong(16) * 2
+                    val length = hexStr.substring(offset.toInt(), offset.toInt() + 64).toLong(16) * 2
+                    if (length > 0) {
+                        val codeHex = hexStr.substring(offset.toInt() + 64, offset.toInt() + 64 + length.toInt())
+                        val code = codeHex.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
+                        promise.resolve(code.trimEnd('\u0000'))
+                    } else {
+                        promise.resolve(null)
+                    }
+                } else {
+                    promise.resolve(null)
+                }
+            } catch (e: Exception) {
+                promise.resolve(null)
             }
         }
     }
