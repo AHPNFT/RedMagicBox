@@ -285,12 +285,12 @@ class CryptoModule(reactContext: ReactApplicationContext) :
         private const val MAINNET_CONTRACT = "0x224C8F36b6bf5f7EA3E8D61ef9e06d995B540f71"
         private const val TESTNET_CONTRACT = "0x84BB41Eb7eBf3b78E47626ec54595f9235dC41bD"
 
-        private const val FUNC_IS_CODE_REGISTERED = "0xa4f2d72b"
-        private const val FUNC_BNB_PRICE = "0x42966c68"
-        private const val FUNC_GET_ACTIVATION_CODE = "0x2d0d2373"
-        private const val FUNC_GET_ALL_TOKENS = "0x624d3c5c"
-        private const val FUNC_TOKEN_PRICES = "0x3a98ef39"
-        private const val FUNC_SUPPORTED = "0x3f4ba83a"
+        private const val FUNC_IS_CODE_REGISTERED = "0x7f170bb9"
+        private const val FUNC_BNB_PRICE = "0x576dde12"
+        private const val FUNC_GET_ACTIVATION_CODE = "0xea700284"
+        private const val FUNC_GET_ALL_TOKENS = "0x0107e472"
+        private const val FUNC_TOKEN_PRICES = "0x204120bc"
+        private const val FUNC_SUPPORTED = "0x68c4ac26"
     }
 
     private fun ethCall(rpcUrl: String, contractAddress: String, data: String): String? {
@@ -370,11 +370,10 @@ class CryptoModule(reactContext: ReactApplicationContext) :
                 val tokensResult = Arguments.createArray()
                 val tokenAddresses = listOf(
                     "0x55d398326f99059fF775485246999027B3197955",
-                    "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
-                    "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d"
+                    "0x92cb10e1d503b5c41f54fcc6b576176e6f29fbad"
                 )
-                val tokenSymbols = listOf("USDT", "BUSD", "USDC")
-                val tokenDecimals = listOf(18, 18, 18)
+                val tokenSymbols = listOf("USDT", "RMAB")
+                val tokenDecimals = listOf(18, 8)
 
                 for (i in tokenAddresses.indices) {
                     val addr = tokenAddresses[i].removePrefix("0x").lowercase()
@@ -400,7 +399,7 @@ class CryptoModule(reactContext: ReactApplicationContext) :
 
                 info.putArray("tokens", tokensResult)
                 info.putString("contractAddress", MAINNET_CONTRACT)
-                info.putString("adminWallet", "0x7E8be446201DEdC881bF9C004B983897621D73bd")
+                info.putString("adminWallet", "0xfF7F9639cFb8945Ce220759635937073b74aAFae")
                 promise.resolve(info)
             } catch (e: Exception) {
                 promise.reject("PAYMENT_INFO_ERR", e.message ?: "Failed to get payment info")
