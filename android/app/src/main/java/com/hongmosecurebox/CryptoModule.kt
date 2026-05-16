@@ -282,12 +282,12 @@ class CryptoModule(reactContext: ReactApplicationContext) :
         private const val MAINNET_RPC = "https://bsc.publicnode.com"
         private const val TESTNET_RPC = "https://bsc-testnet-rpc.publicnode.com"
 
-        private const val MAINNET_CONTRACT = "0x224C8F36b6bf5f7EA3E8D61ef9e06d995B540f71"
+        private const val MAINNET_CONTRACT = "0x6c646235a0eab5Ff68C18f016faE1A04a73f0d04"
         private const val TESTNET_CONTRACT = "0x84BB41Eb7eBf3b78E47626ec54595f9235dC41bD"
 
         private const val FUNC_IS_CODE_REGISTERED = "0x7f170bb9"
         private const val FUNC_BNB_PRICE = "0x576dde12"
-        private const val FUNC_GET_ACTIVATION_CODE = "0xea700284"
+        private const val FUNC_GET_LATEST_CODE_BODY = "0xe30b9524"
         private const val FUNC_GET_ALL_TOKENS = "0x0107e472"
         private const val FUNC_TOKEN_PRICES = "0x204120bc"
         private const val FUNC_SUPPORTED = "0x68c4ac26"
@@ -413,20 +413,17 @@ class CryptoModule(reactContext: ReactApplicationContext) :
             try {
                 val addr = buyerAddress.removePrefix("0x").lowercase()
                 val addrPadded = addr.padEnd(64, '0')
-                val data = FUNC_GET_ACTIVATION_CODE + addrPadded
+                val data = FUNC_GET_LATEST_CODE_BODY + addrPadded
 
                 val result = ethCallWithFallback(data)
                 if (result != null) {
                     val hexStr = result.removePrefix("0x")
-                    val offset = hexStr.substring(0, 64).toLong(16) * 2
-                    val length = hexStr.substring(offset.toInt(), offset.toInt() + 64).toLong(16) * 2
-                    if (length > 0) {
-                        val codeHex = hexStr.substring(offset.toInt() + 64, offset.toInt() + 64 + length.toInt())
-                        val code = codeHex.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
-                        promise.resolve(code.trimEnd('\u0000'))
-                    } else {
-                        promise.resolve(null)
-                    }
+                    val bodyHex = hexStr.substring(0, 24)
+                    val body = bodyHex.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
+                    val checksum = computeChecksum(body)
+                    val raw = body + checksum
+                    val code = raw.substring(0, 4) + "-" + raw.substring(4, 8) + "-" + raw.substring(8, 12) + "-" + raw.substring(12, 16)
+                    promise.resolve(code)
                 } else {
                     promise.resolve(null)
                 }
@@ -434,5 +431,27 @@ class CryptoModule(reactContext: ReactApplicationContext) :
                 promise.resolve(null)
             }
         }
+    }
+
+    private fun computeChecksum(body: String): String {
+        val seed = "RedMagicBox2024SecretSeed"
+        val seedPadded = ByteArray(32)
+        val seedBytes = seed.toByteArray(Charsets.UTF_8)
+        System.arraycopy(seedBytes, 0, seedPadded, 0, minOf(seedBytes.size, 32))
+
+        val bodyBytes = body.toByteArray(Charsets.UTF_8)
+        val hashInput = ByteArray(44)
+        System.arraycopy(seedPadded, 0, hashInput, 0, 32)
+        System.arraycopy(bodyBytes, 0, hashInput, 32, bodyBytes.size)
+
+        val md = MessageDigest.getInstance("SHA-256")
+        val hash = md.digest(hashInput)
+
+        val CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        val checksum = StringBuilder()
+        for (i in 0 until 4) {
+            checksum.append(CHARS[(hash[i].toInt() and 0xFF) % 36])
+        }
+        return checksum.toString()
     }
 }
