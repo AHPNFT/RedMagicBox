@@ -13,4 +13,5 @@ object CryptoNative {
     external fun getActivationKey(): String
     external fun getActivationSalt(): String
     external fun validateActivationCodeV2(code: String): Boolean
+    external fun computeChecksumV2(body: String): String
 }

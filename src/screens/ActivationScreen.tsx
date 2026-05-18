@@ -9,13 +9,11 @@ import {
   ScrollView,
   ActivityIndicator,
   Clipboard,
-  Linking,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Colors from '../theme/colors';
 import { activateWithCode, getActivationState, getRemainingEncrypts } from '../utils/activationState';
-import { FREE_ENCRYPT_LIMIT, verifyActivationCodeOnChain, getPaymentInfo, getActivationCodeByBuyer } from '../utils/activation';
-import type { PaymentInfo, PaymentTokenInfo } from '../utils/activation';
+import { FREE_ENCRYPT_LIMIT, verifyActivationCodeOnChain, openUrlWithChooser } from '../utils/activation';
 import { hapticSuccess, hapticError, hapticLight } from '../utils/haptic';
 import { log } from '../utils/logger';
 import { t } from '../i18n';
@@ -24,7 +22,6 @@ import type { RootStackParamList } from '../types';
 type Props = NativeStackScreenProps<RootStackParamList, 'Activation'>;
 
 type VerifyStep = 'idle' | 'local_check' | 'chain_check' | 'done';
-type TabMode = 'code' | 'purchase';
 
 const ActivationScreen: React.FC<Props> = () => {
   const [code, setCode] = useState('');
@@ -32,11 +29,6 @@ const ActivationScreen: React.FC<Props> = () => {
   const [remaining, setRemaining] = useState(0);
   const [loading, setLoading] = useState(false);
   const [verifyStep, setVerifyStep] = useState<VerifyStep>('idle');
-  const [tabMode, setTabMode] = useState<TabMode>('code');
-  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
-  const [paymentLoading, setPaymentLoading] = useState(false);
-  const [buyerAddress, setBuyerAddress] = useState('');
-  const [checkingCode, setCheckingCode] = useState(false);
 
   useEffect(() => {
     getActivationState().then((s) => setActivated(s.activated));
@@ -95,68 +87,17 @@ const ActivationScreen: React.FC<Props> = () => {
     }
   }, [code]);
 
-  const handleGetCode = useCallback(() => {
+  const handleGetCode = useCallback(async () => {
     hapticLight();
-    const url = 'https://redmagicbox.pages.dev/';
-    Linking.canOpenURL(url).then((supported) => {
-      if (supported) {
-        Linking.openURL(url);
-      } else {
-        Alert.alert(t('common_tip'), t('activation_get_code_hint'));
-      }
-    });
-  }, []);
-
-  const loadPaymentInfo = useCallback(async () => {
-    setPaymentLoading(true);
+    const paymentUrl = 'https://redmagicbox.pages.dev/';
+    Clipboard.setString(paymentUrl);
     try {
-      const info = await getPaymentInfo();
-      setPaymentInfo(info);
+      await openUrlWithChooser(paymentUrl);
     } catch (e) {
-      log.error('Activation', `获取支付信息失败: ${e}`);
-    } finally {
-      setPaymentLoading(false);
+      log.error('Activation', `打开选择器失败: ${e}`);
+      Alert.alert(t('common_tip'), t('activation_link_copied'));
     }
   }, []);
-
-  useEffect(() => {
-    if (tabMode === 'purchase' && !paymentInfo) {
-      loadPaymentInfo();
-    }
-  }, [tabMode]);
-
-  const handleCopyAddress = useCallback((address: string) => {
-    hapticLight();
-    Clipboard.setString(address);
-    Alert.alert(t('common_tip'), t('activation_address_copied'));
-  }, []);
-
-  const handleCheckCode = useCallback(async () => {
-    const addr = buyerAddress.trim();
-    if (!addr || !addr.startsWith('0x') || addr.length !== 42) {
-      Alert.alert(t('common_tip'), t('activation_invalid_address'));
-      return;
-    }
-    hapticLight();
-    setCheckingCode(true);
-    try {
-      const code = await getActivationCodeByBuyer(addr);
-      if (code) {
-        setCode(code);
-        setTabMode('code');
-        hapticSuccess();
-        Alert.alert(t('activation_code_found_title'), t('activation_code_found_msg'));
-      } else {
-        hapticError();
-        Alert.alert(t('activation_code_not_found_title'), t('activation_code_not_found_msg'));
-      }
-    } catch (e) {
-      log.error('Activation', `查询激活码失败: ${e}`);
-      Alert.alert(t('common_tip'), t('activation_check_error'));
-    } finally {
-      setCheckingCode(false);
-    }
-  }, [buyerAddress]);
 
   const formatCode = (text: string) => {
     const raw = text.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 16);
@@ -205,36 +146,6 @@ const ActivationScreen: React.FC<Props> = () => {
           </>
         ) : (
           <>
-            <View style={styles.tabRow}>
-              <TouchableOpacity
-                style={[styles.tab, tabMode === 'code' && styles.tabActive]}
-                onPress={() => setTabMode('code')}>
-                <Text style={[styles.tabText, tabMode === 'code' && styles.tabTextActive]}>
-                  {t('activation_tab_code')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tab, tabMode === 'purchase' && styles.tabActive]}
-                onPress={() => setTabMode('purchase')}>
-                <Text style={[styles.tabText, tabMode === 'purchase' && styles.tabTextActive]}>
-                  {t('activation_tab_purchase')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {tabMode === 'code' ? (
-              <>
-            <View style={styles.challengeCard}>
-              <Text style={styles.challengeTitle}>{t('activation_challenge_title')}</Text>
-              <Text style={styles.challengeText}>
-                {t('activation_challenge_text')}{'\n\n'}
-                {t('activation_challenge_bounty')}{'\n'}
-                {t('activation_challenge_desc')}{'\n'}
-                <Text style={styles.challengeReward}>{t('activation_challenge_reward')}</Text>{'\n'}
-                {t('activation_challenge_suffix')}
-              </Text>
-            </View>
-
             <View style={styles.modeCompare}>
               <View style={[styles.modeCard, styles.modeFree]}>
                 <Text style={styles.modeCardTitle}>{t('activation_mode_free')}</Text>
@@ -313,104 +224,9 @@ const ActivationScreen: React.FC<Props> = () => {
                 {t('activation_get_code')}
               </Text>
               <Text style={styles.getCodeHint}>
-                {t('activation_get_code_hint')}
+                {t('activation_get_code_share_hint')}
               </Text>
             </TouchableOpacity>
-              </>
-            ) : (
-              <>
-            {paymentLoading ? (
-              <View style={styles.paymentLoadingCard}>
-                <ActivityIndicator size="large" color={Colors.primary} />
-                <Text style={styles.paymentLoadingText}>{t('activation_payment_loading')}</Text>
-              </View>
-            ) : paymentInfo ? (
-              <>
-                <View style={styles.paymentInfoCard}>
-                  <Text style={styles.paymentInfoTitle}>{t('activation_payment_title')}</Text>
-                  <Text style={styles.paymentInfoDesc}>{t('activation_payment_desc')}</Text>
-                </View>
-
-                {paymentInfo.bnbPrice > 0 && (
-                  <View style={styles.paymentMethodCard}>
-                    <View style={styles.paymentMethodHeader}>
-                      <Text style={styles.paymentMethodSymbol}>BNB</Text>
-                      <Text style={styles.paymentMethodPrice}>{paymentInfo.bnbPrice} BNB</Text>
-                    </View>
-                    <Text style={styles.paymentMethodNetwork}>{t('activation_network_bsc')}</Text>
-                  </View>
-                )}
-
-                {paymentInfo.tokens.map((token) => (
-                  <View key={token.address} style={styles.paymentMethodCard}>
-                    <View style={styles.paymentMethodHeader}>
-                      <Text style={styles.paymentMethodSymbol}>{token.symbol}</Text>
-                      <Text style={styles.paymentMethodPrice}>{token.price} {token.symbol}</Text>
-                    </View>
-                    <Text style={styles.paymentMethodNetwork}>{t('activation_network_bsc')}</Text>
-                  </View>
-                ))}
-
-                <View style={styles.walletCard}>
-                  <Text style={styles.walletLabel}>{t('activation_payment_wallet')}</Text>
-                  <View style={styles.walletRow}>
-                    <Text style={styles.walletAddress} numberOfLines={1} ellipsizeMode="middle">
-                      {paymentInfo.adminWallet}
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.copyBtn}
-                      onPress={() => handleCopyAddress(paymentInfo.adminWallet)}>
-                      <Text style={styles.copyBtnText}>{t('activation_copy')}</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.stepsCard}>
-                  <Text style={styles.stepsTitle}>{t('activation_payment_steps')}</Text>
-                  <Text style={styles.stepsText}>
-                    {t('activation_payment_step1')}{'\n'}
-                    {t('activation_payment_step2')}{'\n'}
-                    {t('activation_payment_step3')}
-                  </Text>
-                </View>
-
-                <View style={styles.inputCard}>
-                  <Text style={styles.label}>{t('activation_buyer_address_label')}</Text>
-                  <TextInput
-                    style={styles.addressInput}
-                    value={buyerAddress}
-                    onChangeText={setBuyerAddress}
-                    placeholder={t('activation_buyer_address_placeholder')}
-                    placeholderTextColor={Colors.textHint}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.activateBtn, checkingCode && styles.activateBtnDisabled]}
-                  onPress={handleCheckCode}
-                  disabled={checkingCode}>
-                  {checkingCode ? (
-                    <View style={styles.btnRow}>
-                      <ActivityIndicator size="small" color="#FFF" />
-                      <Text style={styles.activateBtnText}>{t('activation_checking')}</Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.activateBtnText}>{t('activation_check_code')}</Text>
-                  )}
-                </TouchableOpacity>
-              </>
-            ) : (
-              <View style={styles.paymentLoadingCard}>
-                <Text style={styles.paymentLoadingText}>{t('activation_payment_load_fail')}</Text>
-                <TouchableOpacity style={styles.retryBtn} onPress={loadPaymentInfo}>
-                  <Text style={styles.retryBtnText}>{t('activation_retry')}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-              </>
-            )}
           </>
         )}
       </ScrollView>
@@ -483,32 +299,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 8,
     fontWeight: '500',
-  },
-  challengeCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Colors.radius.md,
-    padding: 20,
-    width: '100%',
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: Colors.primary,
-  },
-  challengeTitle: {
-    fontSize: Colors.font.lg,
-    fontWeight: '900',
-    color: Colors.primary,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  challengeText: {
-    fontSize: Colors.font.sm,
-    color: Colors.textSecondary,
-    lineHeight: 20,
-  },
-  challengeReward: {
-    fontSize: Colors.font.lg,
-    fontWeight: '900',
-    color: Colors.primary,
   },
   modeCompare: {
     flexDirection: 'row',
@@ -692,7 +482,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   getCodeBtn: {
-    marginTop: 12,
+    marginTop: 16,
     padding: 14,
     width: '100%',
     alignItems: 'center',
@@ -703,184 +493,13 @@ const styles = StyleSheet.create({
   },
   getCodeBtnText: {
     color: Colors.primary,
-    fontSize: Colors.font.md,
+    fontSize: Colors.font.lg,
     fontWeight: '700',
   },
   getCodeHint: {
     color: Colors.textSecondary,
-    fontSize: Colors.font.sm,
-    marginTop: 6,
-    textAlign: 'center',
-  },
-  tabRow: {
-    flexDirection: 'row',
-    width: '100%',
-    marginBottom: 16,
-    borderRadius: Colors.radius.md,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-  },
-  tabActive: {
-    backgroundColor: Colors.primary,
-  },
-  tabText: {
-    fontSize: Colors.font.md,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  tabTextActive: {
-    color: '#FFF',
-  },
-  paymentLoadingCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Colors.radius.md,
-    padding: 32,
-    width: '100%',
-    alignItems: 'center',
-  },
-  paymentLoadingText: {
-    fontSize: Colors.font.sm,
-    color: Colors.textSecondary,
-    marginTop: 12,
-  },
-  paymentInfoCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Colors.radius.md,
-    padding: 20,
-    width: '100%',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: Colors.primary,
-    alignItems: 'center',
-  },
-  paymentInfoTitle: {
-    fontSize: Colors.font.lg,
-    fontWeight: '900',
-    color: Colors.primary,
-    marginBottom: 8,
-  },
-  paymentInfoDesc: {
-    fontSize: Colors.font.sm,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  paymentMethodCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Colors.radius.md,
-    padding: 16,
-    width: '100%',
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  paymentMethodHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  paymentMethodSymbol: {
-    fontSize: Colors.font.lg,
-    fontWeight: '900',
-    color: Colors.primary,
-  },
-  paymentMethodPrice: {
-    fontSize: Colors.font.md,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  paymentMethodNetwork: {
     fontSize: Colors.font.xs,
-    color: Colors.textHint,
     marginTop: 4,
-  },
-  walletCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Colors.radius.md,
-    padding: 16,
-    width: '100%',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  walletLabel: {
-    fontSize: Colors.font.sm,
-    color: Colors.textSecondary,
-    marginBottom: 8,
-    fontWeight: '600',
-  },
-  walletRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  walletAddress: {
-    flex: 1,
-    fontSize: Colors.font.sm,
-    color: Colors.text,
-    fontWeight: '600',
-    fontFamily: 'monospace',
-  },
-  copyBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: Colors.radius.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  copyBtnText: {
-    color: '#FFF',
-    fontSize: Colors.font.xs,
-    fontWeight: '700',
-  },
-  stepsCard: {
-    backgroundColor: '#FFF3CD',
-    borderRadius: Colors.radius.md,
-    padding: 16,
-    width: '100%',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#FFC107',
-  },
-  stepsTitle: {
-    fontSize: Colors.font.md,
-    fontWeight: '700',
-    color: '#856404',
-    marginBottom: 8,
-  },
-  stepsText: {
-    fontSize: Colors.font.sm,
-    color: '#856404',
-    lineHeight: 22,
-  },
-  addressInput: {
-    backgroundColor: Colors.surfaceVariant,
-    borderRadius: Colors.radius.sm,
-    padding: 14,
-    fontSize: Colors.font.sm,
-    color: Colors.text,
-    fontWeight: '600',
-    fontFamily: 'monospace',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  retryBtn: {
-    marginTop: 12,
-    backgroundColor: Colors.primary,
-    borderRadius: Colors.radius.md,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-  },
-  retryBtnText: {
-    color: '#FFF',
-    fontSize: Colors.font.md,
-    fontWeight: '700',
   },
 });
 

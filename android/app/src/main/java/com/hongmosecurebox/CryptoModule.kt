@@ -22,6 +22,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.content.Intent
+
 class CryptoModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
@@ -420,7 +424,7 @@ class CryptoModule(reactContext: ReactApplicationContext) :
                     val hexStr = result.removePrefix("0x")
                     val bodyHex = hexStr.substring(0, 24)
                     val body = bodyHex.chunked(2).map { it.toInt(16).toChar() }.joinToString("")
-                    val checksum = computeChecksum(body)
+                    val checksum = CryptoNative.computeChecksumV2(body)
                     val raw = body + checksum
                     val code = raw.substring(0, 4) + "-" + raw.substring(4, 8) + "-" + raw.substring(8, 12) + "-" + raw.substring(12, 16)
                     promise.resolve(code)
@@ -433,25 +437,81 @@ class CryptoModule(reactContext: ReactApplicationContext) :
         }
     }
 
-    private fun computeChecksum(body: String): String {
-        val seed = "RedMagicBox2024SecretSeed"
-        val seedPadded = ByteArray(32)
-        val seedBytes = seed.toByteArray(Charsets.UTF_8)
-        System.arraycopy(seedBytes, 0, seedPadded, 0, minOf(seedBytes.size, 32))
+    @ReactMethod
+    fun getInstalledWallets(promise: Promise) {
+        try {
+            val pm = reactApplicationContext.packageManager
+            val wallets = Arguments.createArray()
 
-        val bodyBytes = body.toByteArray(Charsets.UTF_8)
-        val hashInput = ByteArray(44)
-        System.arraycopy(seedPadded, 0, hashInput, 0, 32)
-        System.arraycopy(bodyBytes, 0, hashInput, 32, bodyBytes.size)
+            val walletList = listOf(
+                Triple(listOf("io.metamask", "io.metamask.production"), "metamask://dapp/", "MetaMask"),
+                Triple(listOf("com.tokenpocket.pro", "com.tokenpocket.tc", "tokenpocket.pro"), "tpoutside://dapp?url=", "TokenPocket"),
+                Triple(listOf("com.trustwallet.app", "com.trustwallet"), "trust://open_url?url=", "Trust Wallet"),
+                Triple(listOf("com.bitget.wallet", "com.bitkeep.wallet"), "bitkeep://dapp?url=", "Bitget Wallet"),
+                Triple(listOf("com.binance.dev"), "bnc://dapp?url=", "Binance Web3 Wallet"),
+                Triple(listOf("com.bitpie"), "bitpie://dapp?url=", "Bitpie"),
+                Triple(listOf("com.okinc.okex.gp", "com.okex.wallet"), "okx://dapp/url?url=", "OKX Wallet"),
+                Triple(listOf("io.safepal.wallet", "com.safepal.wallet"), "safepal://dapp?url=", "SafePal")
+            )
 
-        val md = MessageDigest.getInstance("SHA-256")
-        val hash = md.digest(hashInput)
+            for ((pkgList, scheme, name) in walletList) {
+                var installedPkg: String? = null
+                for (pkg in pkgList) {
+                    try {
+                        pm.getPackageInfo(pkg, 0)
+                        installedPkg = pkg
+                        break
+                    } catch (_: PackageManager.NameNotFoundException) {
+                        continue
+                    }
+                }
+                val wallet = Arguments.createMap()
+                wallet.putString("name", name)
+                wallet.putString("package", installedPkg ?: pkgList[0])
+                wallet.putString("scheme", scheme)
+                wallet.putBoolean("installed", installedPkg != null)
+                wallets.pushMap(wallet)
+            }
 
-        val CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        val checksum = StringBuilder()
-        for (i in 0 until 4) {
-            checksum.append(CHARS[(hash[i].toInt() and 0xFF) % 36])
+            promise.resolve(wallets)
+        } catch (e: Exception) {
+            promise.reject("WALLET_DETECT_ERR", e.message ?: "Failed to detect wallets")
         }
-        return checksum.toString()
+    }
+
+    @ReactMethod
+    fun openInWallet(scheme: String, url: String, promise: Promise) {
+        try {
+            val fullUrl = when {
+                scheme.startsWith("metamask://") -> scheme + url
+                scheme.startsWith("tpoutside://") -> scheme + Uri.encode(url)
+                scheme.startsWith("trust://") -> scheme + Uri.encode(url)
+                scheme.startsWith("bitkeep://") -> scheme + Uri.encode(url)
+                scheme.startsWith("bnc://") -> scheme + Uri.encode(url)
+                scheme.startsWith("okx://") -> scheme + Uri.encode(url)
+                scheme.startsWith("safepal://") -> scheme + Uri.encode(url)
+                scheme.startsWith("bitpie://") -> scheme + Uri.encode(url)
+                else -> scheme + Uri.encode(url)
+            }
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(fullUrl))
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            reactApplicationContext.startActivity(intent)
+            promise.resolve(true)
+        } catch (e: Exception) {
+            promise.reject("OPEN_WALLET_ERR", e.message ?: "Failed to open wallet")
+        }
+    }
+
+    @ReactMethod
+    fun openUrlWithChooser(url: String, promise: Promise) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            val chooser = Intent.createChooser(intent, "选择应用打开")
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            reactApplicationContext.startActivity(chooser)
+            promise.resolve(true)
+        } catch (e: Exception) {
+            promise.reject("OPEN_CHOOSER_ERR", e.message ?: "Failed to open chooser")
+        }
     }
 }

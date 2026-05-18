@@ -155,6 +155,47 @@ Java_com_hongmosecurebox_CryptoNative_getActivationSalt(JNIEnv *env, jobject) {
     return env->NewStringUTF(val.c_str());
 }
 
+JNIEXPORT jstring JNICALL
+Java_com_hongmosecurebox_CryptoNative_computeChecksumV2(JNIEnv *env, jobject, jstring body) {
+    if (!body) return env->NewStringUTF("");
+
+    const char *bodyStr = env->GetStringUTFChars(body, nullptr);
+    if (!bodyStr) return env->NewStringUTF("");
+
+    size_t bodyLen = strlen(bodyStr);
+    if (bodyLen == 0 || bodyLen > 12) {
+        env->ReleaseStringUTFChars(body, bodyStr);
+        return env->NewStringUTF("");
+    }
+
+    std::string seedStr = _decode(_SS, 0x1a);
+
+    unsigned char seedPadded[32];
+    memset(seedPadded, 0, 32);
+    size_t seedLen = seedStr.length();
+    if (seedLen > 32) seedLen = 32;
+    memcpy(seedPadded, seedStr.c_str(), seedLen);
+
+    unsigned char hashInput[44];
+    memset(hashInput, 0, 44);
+    memcpy(hashInput, seedPadded, 32);
+    memcpy(hashInput + 32, bodyStr, bodyLen);
+
+    env->ReleaseStringUTFChars(body, bodyStr);
+
+    unsigned char hashOut[32];
+    memset(hashOut, 0, 32);
+    sha256(hashInput, 44, hashOut);
+
+    char checksum[5];
+    memset(checksum, 0, 5);
+    for (int i = 0; i < 4; i++) {
+        checksum[i] = CHARS[hashOut[i] % 36];
+    }
+
+    return env->NewStringUTF(checksum);
+}
+
 JNIEXPORT jboolean JNICALL
 Java_com_hongmosecurebox_CryptoNative_validateActivationCodeV2(JNIEnv *env, jobject, jstring code) {
     if (!code) return JNI_FALSE;

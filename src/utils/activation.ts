@@ -37,6 +37,25 @@ export async function getActivationCodeByBuyer(buyerAddress: string): Promise<st
   return CryptoCore.getActivationCodeByBuyer(buyerAddress);
 }
 
+export interface WalletInfo {
+  name: string;
+  package: string;
+  scheme: string;
+  installed: boolean;
+}
+
+export async function getInstalledWallets(): Promise<WalletInfo[]> {
+  return CryptoCore.getInstalledWallets();
+}
+
+export async function openInWallet(scheme: string, url: string): Promise<boolean> {
+  return CryptoCore.openInWallet(scheme, url);
+}
+
+export async function openUrlWithChooser(url: string): Promise<boolean> {
+  return CryptoCore.openUrlWithChooser(url);
+}
+
 export function isActivationCodeFormat(code: string): boolean {
   return CODE_PATTERN.test(code);
 }
