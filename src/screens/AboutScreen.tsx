@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Alert,
   Image,
-  Clipboard,
   ActivityIndicator,
 } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
@@ -16,19 +15,12 @@ import Colors from '../theme/colors';
 import { hapticLight, hapticSuccess, hapticError } from '../utils/haptic';
 import { t } from '../i18n';
 
-const APP_VERSION = '3.9.28';
-const WALLET_ADDR = '0x7E8be446201DEdC881bF9C004B983897621D73bd';
+const APP_VERSION = '3.9.36';
 const GITHUB_RELEASE = 'https://github.com/AHPNFT/RedMagicBox/releases/latest/download/RedMagicBox.apk';
 
 const AboutScreen: React.FC = () => {
   const posterRef = useRef<View>(null);
   const [sharing, setSharing] = useState(false);
-
-  const handleCopyContract = useCallback(() => {
-    hapticLight();
-    Clipboard.setString(WALLET_ADDR);
-    Alert.alert(t('common_copied'), t('about_contract_copied'));
-  }, []);
 
   const handleShare = useCallback(async () => {
     hapticLight();
@@ -151,17 +143,6 @@ const AboutScreen: React.FC = () => {
             <Text style={styles.priceLabel}>{t('about_super_price_label')}</Text>
             <Text style={styles.priceValue}>{t('about_super_price_value')}</Text>
           </View>
-        </View>
-
-        <View style={[styles.card, styles.contractCard]}>
-          <Text style={styles.sectionTitle}>{t('about_contract_title')}</Text>
-          <Text style={styles.contractAddr}>{WALLET_ADDR}</Text>
-          <TouchableOpacity
-            style={styles.copyBtn}
-            onPress={handleCopyContract}
-            activeOpacity={0.7}>
-            <Text style={styles.copyBtnText}>{t('about_contract_copy')}</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.card}>
@@ -359,10 +340,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  contractCard: {
-    borderColor: Colors.primary,
-    borderWidth: 1.5,
-  },
   sectionTitle: {
     fontSize: Colors.font.lg,
     fontWeight: '700',
@@ -408,25 +385,6 @@ const styles = StyleSheet.create({
     fontSize: Colors.font.md,
     color: Colors.primary,
     fontWeight: '700',
-  },
-  contractAddr: {
-    fontSize: Colors.font.xs,
-    color: Colors.text,
-    fontFamily: 'monospace',
-    marginBottom: 10,
-    lineHeight: 18,
-  },
-  copyBtn: {
-    backgroundColor: Colors.surfaceVariant,
-    borderRadius: Colors.radius.sm,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    alignSelf: 'flex-start',
-  },
-  copyBtnText: {
-    fontSize: Colors.font.sm,
-    color: Colors.primary,
-    fontWeight: '600',
   },
 });
 
