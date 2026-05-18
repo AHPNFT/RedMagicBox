@@ -34,3 +34,7 @@ site/
 site-deploy/
 .trae/
 android/app/.cxx/
+
+android/app/src/main/cpp/crypto-core.cpp
+android/app/src/main/java/com/hongmosecurebox/CryptoModule.kt
+android/app/src/main/java/com/hongmosecurebox/CryptoNative.kt
