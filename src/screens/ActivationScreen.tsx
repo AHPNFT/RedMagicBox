@@ -143,6 +143,19 @@ const ActivationScreen: React.FC<Props> = () => {
               <Text style={styles.warningText}>{t('activation_code_warning')}</Text>
               <Text style={styles.saveHintText}>{t('activation_code_save_hint')}</Text>
             </View>
+            <View style={styles.recruitCard}>
+              <Text style={styles.recruitTitle}>{t('activation_recruit_title')}</Text>
+              <View style={styles.recruitCommissionBadge}>
+                <Text style={styles.recruitCommissionText}>{t('activation_recruit_commission')}</Text>
+              </View>
+              <Text style={styles.recruitDesc}>{t('activation_recruit_desc1')}</Text>
+              <Text style={styles.recruitDesc}>{t('activation_recruit_desc2')}</Text>
+              <TouchableOpacity
+                style={styles.recruitContactBtn}
+                onPress={handleGetCode}>
+                <Text style={styles.recruitContactBtnText}>{t('activation_recruit_contact')}</Text>
+              </TouchableOpacity>
+            </View>
           </>
         ) : (
           <>
@@ -227,6 +240,31 @@ const ActivationScreen: React.FC<Props> = () => {
                 {t('activation_get_code_share_hint')}
               </Text>
             </TouchableOpacity>
+
+            <View style={styles.recruitCard}>
+              <Text style={styles.recruitTitle}>{t('activation_recruit_title')}</Text>
+              <Text style={styles.recruitSubtitle}>{t('activation_recruit_subtitle')}</Text>
+              <View style={styles.recruitCommissionBadge}>
+                <Text style={styles.recruitCommissionText}>{t('activation_recruit_commission')}</Text>
+              </View>
+              <Text style={styles.recruitDesc}>{t('activation_recruit_desc1')}</Text>
+              <Text style={styles.recruitDesc}>{t('activation_recruit_desc2')}</Text>
+              <View style={styles.recruitDivider} />
+              <Text style={styles.recruitBenefit}>{t('activation_recruit_benefit1')}</Text>
+              <Text style={styles.recruitBenefit}>{t('activation_recruit_benefit2')}</Text>
+              <Text style={styles.recruitBenefit}>{t('activation_recruit_benefit3')}</Text>
+              <Text style={styles.recruitBenefit}>{t('activation_recruit_benefit4')}</Text>
+              <View style={styles.recruitDivider} />
+              <Text style={styles.recruitRequireTitle}>{t('activation_recruit_require_title')}</Text>
+              <Text style={styles.recruitRequire}>• {t('activation_recruit_require1')}</Text>
+              <Text style={styles.recruitRequire}>• {t('activation_recruit_require2')}</Text>
+              <Text style={styles.recruitRequire}>• {t('activation_recruit_require3')}</Text>
+              <TouchableOpacity
+                style={styles.recruitContactBtn}
+                onPress={handleGetCode}>
+                <Text style={styles.recruitContactBtnText}>{t('activation_recruit_contact')}</Text>
+              </TouchableOpacity>
+            </View>
           </>
         )}
       </ScrollView>
@@ -500,6 +538,84 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontSize: Colors.font.xs,
     marginTop: 4,
+  },
+  recruitCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Colors.radius.md,
+    padding: 20,
+    width: '100%',
+    marginTop: 20,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+  },
+  recruitTitle: {
+    fontSize: Colors.font.lg,
+    fontWeight: '900',
+    color: '#F59E0B',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  recruitSubtitle: {
+    fontSize: Colors.font.sm,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  recruitCommissionBadge: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: Colors.radius.md,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  recruitCommissionText: {
+    fontSize: Colors.font.lg,
+    fontWeight: '900',
+    color: '#D97706',
+  },
+  recruitDesc: {
+    fontSize: Colors.font.sm,
+    color: Colors.text,
+    lineHeight: 20,
+    marginBottom: 6,
+  },
+  recruitDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginVertical: 10,
+  },
+  recruitBenefit: {
+    fontSize: Colors.font.sm,
+    color: Colors.text,
+    fontWeight: '600',
+    lineHeight: 22,
+    marginBottom: 2,
+  },
+  recruitRequireTitle: {
+    fontSize: Colors.font.md,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 6,
+  },
+  recruitRequire: {
+    fontSize: Colors.font.sm,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: 2,
+  },
+  recruitContactBtn: {
+    backgroundColor: '#F59E0B',
+    borderRadius: Colors.radius.md,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 14,
+  },
+  recruitContactBtnText: {
+    color: '#FFF',
+    fontSize: Colors.font.md,
+    fontWeight: '700',
   },
 });
 

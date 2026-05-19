@@ -15,7 +15,7 @@ import Colors from '../theme/colors';
 import { hapticLight, hapticSuccess, hapticError } from '../utils/haptic';
 import { t } from '../i18n';
 
-const APP_VERSION = '3.9.36';
+const APP_VERSION = '3.9.38';
 const GITHUB_RELEASE = 'https://github.com/AHPNFT/RedMagicBox/releases/latest/download/RedMagicBox.apk';
 
 const AboutScreen: React.FC = () => {
