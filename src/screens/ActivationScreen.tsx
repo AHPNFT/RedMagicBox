@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Clipboard,
+  Modal,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Colors from '../theme/colors';
@@ -29,6 +30,7 @@ const ActivationScreen: React.FC<Props> = () => {
   const [remaining, setRemaining] = useState(0);
   const [loading, setLoading] = useState(false);
   const [verifyStep, setVerifyStep] = useState<VerifyStep>('idle');
+  const [recruitModalVisible, setRecruitModalVisible] = useState(false);
 
   useEffect(() => {
     getActivationState().then((s) => setActivated(s.activated));
@@ -152,7 +154,7 @@ const ActivationScreen: React.FC<Props> = () => {
               <Text style={styles.recruitDesc}>{t('activation_recruit_desc2')}</Text>
               <TouchableOpacity
                 style={styles.recruitContactBtn}
-                onPress={handleGetCode}>
+                onPress={() => setRecruitModalVisible(true)}>
                 <Text style={styles.recruitContactBtnText}>{t('activation_recruit_contact')}</Text>
               </TouchableOpacity>
             </View>
@@ -261,13 +263,54 @@ const ActivationScreen: React.FC<Props> = () => {
               <Text style={styles.recruitRequire}>• {t('activation_recruit_require3')}</Text>
               <TouchableOpacity
                 style={styles.recruitContactBtn}
-                onPress={handleGetCode}>
+                onPress={() => setRecruitModalVisible(true)}>
                 <Text style={styles.recruitContactBtnText}>{t('activation_recruit_contact')}</Text>
               </TouchableOpacity>
             </View>
           </>
         )}
       </ScrollView>
+
+      <Modal
+        visible={recruitModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setRecruitModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{t('activation_recruit_modal_title')}</Text>
+            <Text style={styles.modalDesc}>{t('activation_recruit_modal_desc')}</Text>
+            <View style={styles.modalDivider} />
+            <Text style={styles.modalStepTitle}>{t('activation_recruit_modal_step_title')}</Text>
+            <Text style={styles.modalStep}>{t('activation_recruit_modal_step1')}</Text>
+            <Text style={styles.modalStep}>{t('activation_recruit_modal_step2')}</Text>
+            <Text style={styles.modalStep}>{t('activation_recruit_modal_step3')}</Text>
+            <View style={styles.modalDivider} />
+            <Text style={styles.modalContactLabel}>{t('activation_recruit_modal_contact_label')}</Text>
+            <View style={styles.modalContactCard}>
+              <Text style={styles.modalContactIcon}>✈️</Text>
+              <View style={styles.modalContactInfo}>
+                <Text style={styles.modalContactType}>{t('activation_recruit_modal_telegram')}</Text>
+                <Text style={styles.modalContactId}>@redmagicbox</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.modalCopyBtn}
+              onPress={() => {
+                Clipboard.setString('@redmagicbox');
+                hapticSuccess();
+                Alert.alert(t('common_success'), t('activation_recruit_modal_copied'));
+              }}>
+              <Text style={styles.modalCopyBtnText}>{t('activation_recruit_modal_copy')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalCloseBtn}
+              onPress={() => setRecruitModalVisible(false)}>
+              <Text style={styles.modalCloseBtnText}>{t('common_close')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -616,6 +659,110 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: Colors.font.md,
     fontWeight: '700',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: Colors.background,
+    borderRadius: Colors.radius.md,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+  },
+  modalTitle: {
+    fontSize: Colors.font.lg,
+    fontWeight: '900',
+    color: '#F59E0B',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  modalDesc: {
+    fontSize: Colors.font.sm,
+    color: Colors.text,
+    lineHeight: 20,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  modalDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginVertical: 12,
+  },
+  modalStepTitle: {
+    fontSize: Colors.font.md,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 6,
+  },
+  modalStep: {
+    fontSize: Colors.font.sm,
+    color: Colors.text,
+    lineHeight: 22,
+    marginBottom: 2,
+  },
+  modalContactLabel: {
+    fontSize: Colors.font.md,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  modalContactCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: Colors.radius.md,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    marginBottom: 14,
+  },
+  modalContactIcon: {
+    fontSize: 28,
+    marginRight: 12,
+  },
+  modalContactInfo: {
+    flex: 1,
+  },
+  modalContactType: {
+    fontSize: Colors.font.xs,
+    color: Colors.textSecondary,
+    marginBottom: 2,
+  },
+  modalContactId: {
+    fontSize: Colors.font.lg,
+    fontWeight: '900',
+    color: '#F59E0B',
+  },
+  modalCopyBtn: {
+    backgroundColor: '#F59E0B',
+    borderRadius: Colors.radius.md,
+    padding: 14,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  modalCopyBtnText: {
+    color: '#FFF',
+    fontSize: Colors.font.md,
+    fontWeight: '700',
+  },
+  modalCloseBtn: {
+    borderRadius: Colors.radius.md,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  modalCloseBtnText: {
+    color: Colors.textSecondary,
+    fontSize: Colors.font.md,
+    fontWeight: '600',
   },
 });
 
